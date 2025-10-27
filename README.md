@@ -1,38 +1,37 @@
-# NOF0 - 开箱即用的Agentic Trading项目
+# NOF0 - Turnkey Agentic Trading Project
 
-> **终极目标**: 完整复刻 [NOF1.ai](https://nof1.ai) Alpha Arena，打造开源的AI交易竞技平台
+> **North Star**: Faithfully recreate the [NOF1.ai](https://nof1.ai) Alpha Arena and deliver an open-source AI trading competition platform.
 
-让 AI + Crypto 走向大众视野：用真实数据和清晰可视化，回答"哪个模型更会赚"的朴素问题。
+Bring AI + crypto into the spotlight by pairing real data with clear visual analytics so anyone can answer the basic question: “Which model makes more money?”
 
+## Project Overview
 
-## 项目简介
+NOF0 is a stage where multiple AI models compete in the live crypto market. Each agent starts with $10,000 and the dashboard shows— in real time— who is winning and who is underwater. The goal is to replicate the full nof1.ai experience so anyone can self-host an AI trading arena.
 
-NOF0 是一个让多个AI模型在真实加密货币市场中进行交易竞赛的平台。每个AI从$10,000起步，实时展示谁赚的多、谁亏的惨。本项目复刻 nof1.ai 的完整功能，让任何人都能部署自己的AI交易竞技场。
+## Vision
 
-## 项目愿景
+### Ultimate Goal
+Ship a complete open-source clone of [NOF1.ai](https://nof1.ai)’s Alpha Arena.
 
-### 终极目标
-完整开源复刻 [NOF1.ai](https://nof1.ai) Alpha Arena
+### Current Progress
 
-### 当前进度
+- Frontend: 100% (runs independently without the backend)
+- Backend: 20%
+- AI Agents: 0%
 
-- 前端：100%（可独立运行，不依赖后端）
-- 后端：20%
-- AI Agent：0%
-
-## 项目结构
+## Project Layout
 
 ```
 nof0/
-├── web/          # [前端] Next.js + React + Recharts
-├── go/           # [后端] Go-Zero + REST API
-├── mcp/          # [MCP数据] MCP浏览器截图、JSON静态数据等
-└── agents/       # [AI引擎] (规划中)
+├── web/          # [Frontend] Next.js + React + Recharts
+├── go/           # [Backend] Go-Zero + REST API
+├── mcp/          # [MCP Data] Browser captures, static JSON, etc.
+└── agents/       # [AI Engine] (planned)
 ```
 
-## 快速开始
+## Quick Start
 
-### 启动前端
+### Launch the Frontend
 
 ```bash
 cd web
@@ -40,17 +39,17 @@ npm install
 npm run dev
 ```
 
-访问 `http://localhost:3000`
+Open `http://localhost:3000`
 
-**前端核心特性**:
-- 账户总资产曲线
-- 持仓情况
-- 成交纪录
-- 模型对话（Model Chat）
-- 排行榜
-- 模型详情
+**Frontend highlights**:
+- Account equity curve
+- Open positions
+- Executed trades
+- Model chat transcript
+- Leaderboard
+- Model detail view
 
-### 启动后端
+### Launch the Backend
 
 ```bash
 cd go
@@ -58,51 +57,51 @@ go build -o nof0-api ./nof0.go
 ./nof0-api -f etc/nof0.yaml
 ```
 
-服务运行在 `http://localhost:8888`
+The API listens on `http://localhost:8888`.
 
-完整后端文档见 [go/README.md](go/README.md)
+Full backend documentation: [go/README.md](go/README.md)
 
-## 技术栈
+## Tech Stack
 
-### 前端 (web/)
-- **框架**: Next.js 15 + React 19 + TypeScript
-- **图表**: Recharts（自定义图例与末端标记）
-- **状态**: Zustand
-- **样式**: CSS Variables 主题系统（避免SSR/CSR水合差异）
-- **状态**: 开发完毕
+### Frontend (web/)
+- **Framework**: Next.js 15 + React 19 + TypeScript
+- **Charts**: Recharts (custom legends and endpoints)
+- **State**: Zustand
+- **Styling**: CSS variable-driven theme system (avoids SSR/CSR hydration drift)
+- **Status**: feature-complete
 
-**技术亮点**:
-- 在 `src/lib/model/meta.ts` 统一配置品牌色与白色版 Logo
-- `globals.css` 使用 CSS 变量驱动主题（`--panel-bg`、`--muted-text`、`--axis-tick` 等）
-- 开发规范：参考 `web/docs/theme.md`，避免 `isDark` 分支判断
+**Implementation notes**:
+- Centralize branding colors and light logos in `src/lib/model/meta.ts`
+- `globals.css` drives theming with CSS variables (`--panel-bg`, `--muted-text`, `--axis-tick`, etc.)
+- Follow `web/docs/theme.md` to avoid `isDark` branching
 
-### 后端 (go/)
-- **框架**: Go-Zero 微服务框架
-- **特性**: 7个REST端点、88%测试覆盖、响应时间 <10ms
-- **状态**: 开发中
+### Backend (go/)
+- **Framework**: Go-Zero microservice stack
+- **Features**: 7 REST endpoints, 88% test coverage, <10 ms response time
+- **Status**: in progress
 
-详细文档见 [go/README.md](go/README.md)
+Detailed docs: [go/README.md](go/README.md)
 
-## 数据快照工具
+## Data Snapshot Tool
 
-一键下载 nof1.ai 的上游接口原始数据，离线保存：
+Pull the raw upstream payloads from nof1.ai in one command and archive them locally:
 
 ```bash
 cd web
 npm run snapshot:nof1
 ```
 
-**生成内容**:
-- 生成目录：`snapshots/nof1/<ISO时间戳>/*.json` 与 `index.json`
-- 已包含：crypto-prices、positions、trades、account-totals、since-inception-values、leaderboard、analytics、conversations
-- 默认不提交到仓库（见 `.gitignore`）
+**Output**:
+- Folder: `snapshots/nof1/<ISO timestamp>/*.json` plus `index.json`
+- Includes: crypto-prices, positions, trades, account-totals, since-inception-values, leaderboard, analytics, conversations
+- Ignored by default (see `.gitignore`)
 
-## 相关资源
+## References
 
-- [NOF1 官方网站](https://nof1.ai/)
-- [后端完整文档](go/README.md)
-- [Go-Zero框架](https://go-zero.dev/)
+- [NOF1 official site](https://nof1.ai/)
+- [Backend documentation](go/README.md)
+- [Go-Zero framework](https://go-zero.dev/)
 
-## 许可证
+## License
 
 MIT License

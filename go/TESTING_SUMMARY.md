@@ -1,62 +1,62 @@
 # NOF0 API Testing Summary
 
-## 测试完成概况
+## Snapshot
 
-### ✅ 已完成项目
+### ✅ Completed Work
 
-1. **接口修复** - 100%完成
-   - ✅ Trade类型:27个字段全部匹配
-   - ✅ SinceInceptionResponse:结构完全重构
-   - ✅ AccountTotal:扩展至包含完整positions数据
-   - ✅ 数据加载器:修正所有路径和逻辑
+1. **API schema fixes** – 100% done
+   - ✅ `Trade` type: all 27 fields match the upstream schema
+   - ✅ `SinceInceptionResponse`: structure fully rebuilt
+   - ✅ `AccountTotal`: extended to include full `positions` payload
+   - ✅ Data loader: every path and branch corrected
 
-2. **集成测试** - 100%覆盖
-   - ✅ 7个API端点全部验证
-   - ✅ 数据一致性验证
-   - ✅ JSON结构完全匹配
-   - 文件:`test/integration_test.go`
+2. **Integration tests** – 100% coverage
+   - ✅ All 7 API endpoints verified
+   - ✅ Data consistency checks
+   - ✅ JSON structures match exactly
+   - Source: `test/integration_test.go`
 
-3. **单元测试** - 88%数据层覆盖
-   - ✅ 数据加载器:9个测试用例
-   - ✅ Logic层:2个测试用例
-   - ✅ 性能基准测试
-   - 文件:`internal/data/loader_test.go`, `internal/logic/cryptopriceslogic_test.go`
+3. **Unit tests** – 88% coverage across the data layer
+   - ✅ Data loader: 9 cases
+   - ✅ Logic layer: 2 cases
+   - ✅ Benchmarks in place
+   - Files: `internal/data/loader_test.go`, `internal/logic/cryptopriceslogic_test.go`
 
-4. **测试文档** - 完整
-   - ✅ 测试指南:`TEST_README.md`
-   - ✅ 测试总结:`TESTING_SUMMARY.md`
+4. **Testing docs** – complete
+   - ✅ Guide: `TEST_README.md`
+   - ✅ Summary: `TESTING_SUMMARY.md`
 
-5. **自动化脚本** - 全部可用
-   - ✅ 单元测试运行器:`scripts/run-tests.sh`
-   - ✅ 集成测试运行器:`scripts/run-integration-tests.sh`
+5. **Automation scripts** – fully wired
+   - ✅ Unit test runner: `scripts/run-tests.sh`
+   - ✅ Integration test runner: `scripts/run-integration-tests.sh`
 
-## 测试覆盖详情
+## Coverage Detail
 
-### 数据层 (Data Layer) - 88% 覆盖
+### Data Layer – 88% coverage
 
-| 函数 | 测试状态 | 说明 |
-|------|---------|------|
-| LoadCryptoPrices | ✅ | 6种加密货币价格 |
-| LoadAccountTotals | ✅ | 1392条账户记录 |
-| LoadTrades | ✅ | 230+笔交易 |
-| LoadSinceInception | ✅ | 7个时间序列 |
-| LoadLeaderboard | ✅ | 6个AI模型 |
-| LoadAnalytics | ✅ | 聚合分析数据 |
-| LoadModelAnalytics | ✅ | 6个模型特定分析 |
+| Function | Status | Notes |
+|----------|--------|-------|
+| LoadCryptoPrices | ✅ | 6 spot prices |
+| LoadAccountTotals | ✅ | 1,392 equity snapshots |
+| LoadTrades | ✅ | 230+ trades |
+| LoadSinceInception | ✅ | 7 time-series entries |
+| LoadLeaderboard | ✅ | 6 AI models |
+| LoadAnalytics | ✅ | Aggregated analytics |
+| LoadModelAnalytics | ✅ | Per-model analytics |
 
-### API端点 - 100% 验证
+### API Endpoints – 100% verified
 
-| 端点 | 状态 | 数据量 | 响应时间 |
-|------|------|--------|---------|
-| /api/crypto-prices | ✅ | 6 coins | ~2.2ms |
-| /api/leaderboard | ✅ | 6 models | ~0.6ms |
-| /api/trades | ✅ | 230 trades | ~9.6ms |
-| /api/since-inception-values | ✅ | 7 series | ~0.7ms |
-| /api/account-totals | ✅ | 1392 records | ~151.6ms |
-| /api/analytics | ✅ | 6 models | ~1.5ms |
-| /api/analytics/:modelId | ✅ | per model | ~1.7ms |
+| Endpoint | Status | Payload | Latency |
+|----------|--------|---------|---------|
+| /api/crypto-prices | ✅ | 6 coins | ~2.2 ms |
+| /api/leaderboard | ✅ | 6 models | ~0.6 ms |
+| /api/trades | ✅ | 230 trades | ~9.6 ms |
+| /api/since-inception-values | ✅ | 7 series | ~0.7 ms |
+| /api/account-totals | ✅ | 1,392 records | ~151.6 ms |
+| /api/analytics | ✅ | 6 models | ~1.5 ms |
+| /api/analytics/:modelId | ✅ | Per-model slice | ~1.7 ms |
 
-### 性能基准测试
+### Benchmarks
 
 ```
 BenchmarkLoadCryptoPrices-10          16948    72055 ns/op     2064 B/op      35 allocs/op
@@ -69,151 +69,151 @@ BenchmarkCryptoPrices-10              16717    69962 ns/op     2064 B/op      35
 
 ## 快速开始
 
-### 运行所有单元测试
+### Run the full unit test suite
 
 ```bash
 cd go
 ./scripts/run-tests.sh
 ```
 
-### 运行集成测试
+### Run integration tests
 
 ```bash
 cd go
 ./scripts/run-integration-tests.sh
 ```
 
-### 运行特定测试
+### Target specific tests
 
 ```bash
-# 测试数据加载器
+# Data loader
 go test ./internal/data/... -v
 
-# 测试Logic层
+# Logic layer
 go test ./internal/logic/... -v
 
-# 测试特定函数
+# Narrow to one function
 go test ./internal/data/... -v -run TestLoadCryptoPrices
 
-# 运行基准测试
+# Benchmarks
 go test ./internal/data/... -bench=. -benchmem
 ```
 
-### 查看覆盖率报告
+### Generate a coverage report
 
 ```bash
 go test ./internal/... -coverprofile=coverage.out
 go tool cover -html=coverage.out
 ```
 
-## 验证的关键功能
+## Key Validations
 
-### 1. 数据类型完整性
+### 1. Type completeness
 
-✅ **Trade对象** (27个字段)
-- 基本信息:id, model_id, symbol, side, trade_type
-- 数量和价格:quantity, entry_price, exit_price
-- 时间戳:entry_time, exit_time, entry_human_time, exit_human_time
-- 交易标识:entry_tid, exit_tid, entry_oid, exit_oid
-- 盈亏:realized_gross_pnl, realized_net_pnl
-- 手续费:entry_commission_dollars, exit_commission_dollars, total_commission_dollars
-- 其他:leverage, confidence, entry_crossed, exit_crossed等
+✅ **Trade** (27 fields)
+- Core: `id`, `model_id`, `symbol`, `side`, `trade_type`
+- Sizing: `quantity`, `entry_price`, `exit_price`
+- Timing: `entry_time`, `exit_time`, `entry_human_time`, `exit_human_time`
+- Identifiers: `entry_tid`, `exit_tid`, `entry_oid`, `exit_oid`
+- PnL: `realized_gross_pnl`, `realized_net_pnl`
+- Fees: `entry_commission_dollars`, `exit_commission_dollars`, `total_commission_dollars`
+- Misc: `leverage`, `confidence`, `entry_crossed`, `exit_crossed`, etc.
 
-✅ **AccountTotal对象** (11个字段+Position子对象)
-- 基本信息:id, model_id, timestamp
-- 资金数据:dollar_equity, realized_pnl, total_unrealized_pnl
-- 统计:cum_pnl_pct, sharpe_ratio
-- 标记:since_inception_hourly_marker, since_inception_minute_marker
-- 持仓:positions (map[string]Position)
+✅ **AccountTotal** (11 fields + nested `Position`)
+- Core: `id`, `model_id`, `timestamp`
+- Capital: `dollar_equity`, `realized_pnl`, `total_unrealized_pnl`
+- Metrics: `cum_pnl_pct`, `sharpe_ratio`
+- Markers: `since_inception_hourly_marker`, `since_inception_minute_marker`
+- Positions: `positions` (map[string]Position)
 
-✅ **SinceInceptionValue对象** (5个字段)
-- 基本信息:id, model_id
-- 净值:nav_since_inception
-- 时间:inception_date
-- 调用次数:num_invocations
+✅ **SinceInceptionValue** (5 fields)
+- Core: `id`, `model_id`
+- NAV: `nav_since_inception`
+- Timing: `inception_date`
+- Counter: `num_invocations`
 
-### 2. API一致性
+### 2. API fidelity
 
-✅ 所有响应都包含serverTime
-✅ 所有JSON字段名使用snake_case
-✅ 所有数值类型正确(float64, int, int64)
-✅ 所有时间戳格式一致
-✅ 所有数组和嵌套对象结构匹配
+✅ Every response carries `serverTime`  
+✅ All JSON keys use snake_case  
+✅ Numeric types are correct (`float64`, `int`, `int64`)  
+✅ Timestamp formats align across payloads  
+✅ Arrays and nested objects match the source structure
 
-### 3. 错误处理
+### 3. Error handling
 
-✅ 文件不存在时正确返回错误
-✅ JSON格式错误时正确返回错误
-✅ 非存在模型返回空analytics(优雅降级)
+✅ Missing files bubble up explicit errors  
+✅ Malformed JSON is surfaced cleanly  
+✅ Unknown model IDs return empty analytics (graceful fallback)
 
-## 测试最佳实践
+## Testing Best Practices
 
-本项目遵循以下测试最佳实践:
+We adhere to the following:
 
-1. ✅ **使用真实数据** - 所有测试使用实际mcp/data文件
-2. ✅ **表格驱动测试** - ModelAnalytics使用表格驱动
-3. ✅ **测试边界条件** - 测试非存在文件、无效JSON
-4. ✅ **性能基准** - 为关键路径提供benchmark
-5. ✅ **清晰的错误消息** - 使用require和assert提供清晰的失败信息
-6. ✅ **独立测试** - 每个测试可独立运行
-7. ✅ **快速执行** - 单元测试在<1秒内完成
+1. ✅ **Real payloads** – tests rely on actual `mcp/data` files  
+2. ✅ **Table-driven cases** – especially for `ModelAnalytics`  
+3. ✅ **Edge coverage** – missing files and invalid JSON paths  
+4. ✅ **Benchmarks** – for the critical data-loading paths  
+5. ✅ **Readable failures** – `require` / `assert` with rich messages  
+6. ✅ **Isolated runs** – every test is self-contained  
+7. ✅ **Fast feedback** – unit tests finish in <1 second
 
-## 改进建议
+## Recommendations
 
-### 短期优化
+### Near term
 
-1. **提高Logic层覆盖率** (当前20%)
-   - 为所有logic文件添加单元测试
-   - 目标:90%+覆盖率
+1. **Raise logic-layer coverage** (currently ~20%)
+   - Add unit tests for every logic package
+   - Target: 90%+
 
-2. **添加Handler层测试**
-   - HTTP请求/响应测试
-   - 参数验证测试
+2. **Add handler tests**
+   - Verify HTTP request/response flows
+   - Exercise parameter validation
 
-3. **优化AccountTotals加载性能**
-   - 当前:~50ms加载时间
-   - 考虑:增量加载、缓存策略
+3. **Optimize account-totals load time**
+   - Current: ~50 ms
+   - Ideas: incremental loads, caching strategy
 
-### 长期优化
+### Long term
 
-1. **添加E2E测试**
-   - 完整的用户流程测试
-   - 多端点组合测试
+1. **E2E tests**
+   - Full user journeys
+   - Multi-endpoint flows
 
-2. **负载测试**
-   - 并发请求测试
-   - 压力测试
+2. **Load testing**
+   - Concurrency drills
+   - Stress scenarios
 
-3. **模糊测试**
-   - 使用go-fuzz进行模糊测试
-   - 发现边界情况
+3. **Fuzzing**
+   - Use `go-fuzz` or `go test -fuzz`
+   - Catch boundary regressions
 
-## 相关文档
+## Related Docs
 
-- 详细测试指南:`TEST_README.md`
-- API文档:`mcp/data/README.md`
-- 数据结构:`mcp/data/DATA_STRUCTURES.md`
+- Testing guide: `TEST_README.md`
+- API spec: `mcp/data/README.md`
+- Data structures: `mcp/data/DATA_STRUCTURES.md`
 
-## 测试维护
+## Maintaining the Suite
 
-### 添加新端点时
+### Adding a new endpoint
 
-1. 在`types.go`添加类型定义
-2. 在`loader.go`添加加载函数
-3. 在`loader_test.go`添加单元测试
-4. 在`integration_test.go`添加集成测试
-5. 更新`TEST_README.md`
+1. Define types in `types.go`
+2. Add loader helpers in `loader.go`
+3. Cover with unit tests in `loader_test.go`
+4. Extend `integration_test.go`
+5. Update `TEST_README.md`
 
-### 修改数据结构时
+### Modifying data structures
 
-1. 更新类型定义
-2. 运行所有测试确保兼容性
-3. 更新相关文档
+1. Update the type definitions
+2. Run the full suite to confirm compatibility
+3. Refresh supporting docs
 
 ---
 
-**测试框架**: Go testing + testify
-**覆盖率工具**: go cover
-**基准测试**: go test -bench
-**最后更新**: 2025-10-26
-**状态**: ✅ 所有测试通过
+**Test framework**: Go testing + Testify  
+**Coverage tooling**: `go cover`  
+**Benchmarks**: `go test -bench`  
+**Last updated**: 2025-10-26  
+**Status**: ✅ All tests green
