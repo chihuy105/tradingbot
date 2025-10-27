@@ -58,7 +58,7 @@ func main() {
 		log.Printf("skip crypto prices: %v", err)
 	}
 
-	// 2) Since inception: current JSON不包含时间序列，跳过导入（由后续ETL产出再导入）。
+	// 2) Since inception: current JSON omits the full time series; skip for now and import once ETL produces it.
 	if _, err := dl.LoadSinceInception(); err == nil {
 		log.Printf("skip since-inception: design expects timeseries; source has summary only")
 	}
@@ -259,7 +259,7 @@ func insertPositionOpen(ctx context.Context, conn sqlx.SqlConn, modelId, symbol 
           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'open')
           ON CONFLICT (id) DO NOTHING`
 	pid := fmt.Sprintf("%s:%s:%d", modelId, symbol, entryMs)
-	side := "long" // 无法从示例数据稳定推断多空，默认 long；后续由导入源决定
+	side := "long" // Sample data does not expose a reliable direction flag; default to long until the source provides one.
 	mustExec(ctx, conn, q, pid, modelId, symbol, side, pos.EntryPrice, pos.Quantity, nullFloat(pos.Leverage), nullFloat(pos.Confidence), entryMs)
 }
 

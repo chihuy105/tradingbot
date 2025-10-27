@@ -67,7 +67,7 @@ BenchmarkLoadAnalytics-10              3050   402275 ns/op   108008 B/op      43
 BenchmarkCryptoPrices-10              16717    69962 ns/op     2064 B/op      35 allocs/op
 ```
 
-## 快速开始
+## Getting Started
 
 ### Run the full unit test suite
 
