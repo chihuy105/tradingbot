@@ -12,7 +12,7 @@ export default function ReadmePanel() {
     fetch("/README.md", { cache: "no-store" })
       .then((r) => r.text())
       .then((t) => mounted && setText(t))
-      .catch(() => mounted && setError("无法加载 README.md"));
+      .catch(() => mounted && setError("Unable to load README.md"));
     return () => {
       mounted = false;
     };
@@ -27,7 +27,7 @@ export default function ReadmePanel() {
   if (!text)
     return (
       <div className={`text-xs`} style={{ color: "var(--muted-text)" }}>
-        加载 README.md…
+        Loading README.md…
       </div>
     );
 

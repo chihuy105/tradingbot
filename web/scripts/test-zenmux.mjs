@@ -10,7 +10,7 @@
  *  - OPENAI_EXTRA_BODY    (JSON, optional)
  *
  * Usage:
- *   node scripts/test-zenmux.mjs [--content "要提问的内容"]
+ *   node scripts/test-zenmux.mjs [--content "question to ask"]
  */
 
 import process from 'node:process';
@@ -31,7 +31,7 @@ const apiKey = process.env.OPENAI_API_KEY || '';
 const model = process.env.OPENAI_MODEL || 'openai/gpt-5';
 const extraHeaders = safeJSON(process.env.OPENAI_EXTRA_HEADERS) || {};
 const extraBody = safeJSON(process.env.OPENAI_EXTRA_BODY) || undefined;
-const content = argv.get('content') || '解释一下什么是量子计算';
+const content = argv.get('content') || 'Explain what quantum computing is';
 
 if (!apiKey) {
   console.error('OPENAI_API_KEY not set');
@@ -101,4 +101,3 @@ function redact(val) {
   if (val.length <= 6) return '***';
   return `${val.slice(0, 6)}…${val.slice(-4)}`;
 }
-

@@ -118,7 +118,7 @@ function sharpeRatio(excess: number[]) {
     xs.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (n - 1),
   );
   if (!std) return 0;
-  return mean / std; // 不年化，更贴近原站数值量级
+  return mean / std; // Non-annualized to match the original scale
 }
 
 export function useSharpeMap() {
@@ -146,7 +146,7 @@ export function useSharpeMap() {
   const bench = benchDailyReturns(rows);
   const arr = trades?.trades ?? [];
 
-  // 取出所有模型 id（排除基准）
+  // Extract all model ids (excluding benchmarks)
   const ids = Array.from(
     new Set(
       arr.map((t) => t.model_id).filter((id) => id && id !== "buynhold_btc"),

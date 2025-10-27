@@ -10,29 +10,31 @@ export default function AnalyticsPanel() {
   const wl = data?.winners_losers_breakdown_table || [];
   return (
     <div className="space-y-3">
-      <ErrorBanner message={isError ? "分析数据暂不可用。" : undefined} />
+      <ErrorBanner
+        message={isError ? "Analytics data is temporarily unavailable." : undefined}
+      />
       <div className="ui-sans grid grid-cols-2 gap-3 text-[11px]">
-        <Kpi label="胜率" value={fmtPct(data?.win_rate)} />
+        <Kpi label="Win rate" value={fmtPct(data?.win_rate)} />
         <Kpi
-          label="多空比"
+          label="Long/short ratio"
           value={
             data?.long_short_trades_ratio != null
               ? data?.long_short_trades_ratio.toFixed(2)
               : "—"
           }
         />
-        <Kpi label="平均置信度" value={fmtPct(data?.avg_confidence)} />
-        <Kpi label="中位置信度" value={fmtPct(data?.median_confidence)} />
+        <Kpi label="Average confidence" value={fmtPct(data?.avg_confidence)} />
+        <Kpi label="Median confidence" value={fmtPct(data?.median_confidence)} />
       </div>
-      <Block title="费用/盈亏分解">
+      <Block title="Fees / PnL breakdown">
         <MiniTable rows={fee} />
       </Block>
-      <Block title="赢家/输家分布">
+      <Block title="Winner / loser distribution">
         <MiniTable rows={wl} />
       </Block>
       {isLoading ? (
         <div className="text-xs" style={{ color: "var(--muted-text)" }}>
-          加载中…
+          Loading…
         </div>
       ) : null}
     </div>
@@ -88,7 +90,7 @@ function MiniTable({ rows }: { rows: any[] }) {
   if (!rows?.length)
     return (
       <div className="text-xs" style={{ color: "var(--muted-text)" }}>
-        暂无数据
+        No data yet
       </div>
     );
   const cols = Object.keys(rows[0] || {});

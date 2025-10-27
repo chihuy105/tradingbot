@@ -145,7 +145,7 @@ body {
 html,
 body {
   height: 100%;
-  /* 允许页面自然纵向滚动，避免详情页/排行榜被裁切；横向默认隐藏 */
+  /* Allow natural vertical scrolling so detail/leaderboard pages are not clipped; hide horizontal overflow by default */
   overflow-y: auto;
   overflow-x: hidden;
 }

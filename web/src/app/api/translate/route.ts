@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
         { headers: { "x-cache": "hit" } },
       );
 
-    const prompt = `将以下内容翻译成简体中文，保留专有名词、符号与数值格式；如果包含代码/JSON/表格，只翻译注释与自然语言，不改变结构：\n\n${sliced}`;
+    const prompt = `Translate the following into Simplified Chinese. Preserve proper nouns, symbols, and numeric formatting. If the text contains code, JSON, or tables, translate only the comments and natural language without altering the structure:\n\n${sliced}`;
 
     // Normalize base URL: if it looks like '/v1' root, default to chat/completions
     const trimmed = OPENAI_API_URL.replace(/\/+$/, "");

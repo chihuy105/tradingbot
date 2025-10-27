@@ -34,7 +34,7 @@ export default function ModelAnalyticsDetails({
           className="ui-sans text-sm font-semibold"
           style={{ color: "var(--foreground)" }}
         >
-          分析详情
+          Analytics details
         </div>
         <button
           className="ui-sans rounded border px-2 py-1 text-xs chip-btn"
@@ -44,78 +44,78 @@ export default function ModelAnalyticsDetails({
           }}
           onClick={() => setOpen((v) => !v)}
         >
-          {open ? "收起" : "展开"}
+          {open ? "Collapse" : "Expand"}
         </button>
       </div>
       {open && (
         <div className="px-3 pb-3">
-          {/* 顶部KPI条：紧凑四列/八项，金融风格右对齐 */}
+          {/* Top KPI strip: compact four-column grid with right-aligned finance style */}
           <dl
             className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-4 lg:grid-cols-8 border-b pb-2"
             style={{ borderColor: "var(--panel-border)" }}
           >
-            {kpi("总交易数", intFmt(t.total_trades))}
-            {kpi("平均持有", minsCompact(t.avg_holding_period_mins))}
-            {kpi("平均杠杆", numFmt(t.avg_convo_leverage, 1))}
-            {kpi("平均名义", fmtUSD(t.avg_size_of_trade_notional))}
-            {kpi("胜率", pctFmt(w.win_rate))}
-            {kpi("总手续费", fmtUSD(f.total_fees_paid))}
+            {kpi("Total trades", intFmt(t.total_trades))}
+            {kpi("Avg hold time", minsCompact(t.avg_holding_period_mins))}
+            {kpi("Avg leverage", numFmt(t.avg_convo_leverage, 1))}
+            {kpi("Avg notional", fmtUSD(t.avg_size_of_trade_notional))}
+            {kpi("Win rate", pctFmt(w.win_rate))}
+            {kpi("Total fees", fmtUSD(f.total_fees_paid))}
             {kpiColored(
-              "最大盈利",
+              "Max gain",
               fmtUSD(f.biggest_net_gain),
               f.biggest_net_gain,
             )}
             {kpiColored(
-              "最大亏损",
+              "Max loss",
               fmtUSD(f.biggest_net_loss),
               f.biggest_net_loss,
             )}
           </dl>
 
-          {/* 单列信息：更紧凑的分组，以小标题+三列格栅呈现 */}
-          <Subhead title="交易概览" />
+          {/* Single-column groups rendered with subheadings and a three-column grid */}
+          <Subhead title="Trade overview" />
           <StatGrid>
-            {stat("中位持有时长", minsCompact(t.median_holding_period_mins))}
-            {stat("持有时长标准差", minsCompact(t.std_holding_period_mins))}
-            {stat("中位会话杠杆", numFmt(t.median_convo_leverage, 1))}
-            {stat("中位名义金额", fmtUSD(t.median_size_of_trade_notional))}
-            {stat("名义金额标准差", fmtUSD(t.std_size_of_trade_notional))}
+            {stat("Median hold time", minsCompact(t.median_holding_period_mins))}
+            {stat("Hold time std dev", minsCompact(t.std_holding_period_mins))}
+            {stat("Median session leverage", numFmt(t.median_convo_leverage, 1))}
+            {stat("Median notional", fmtUSD(t.median_size_of_trade_notional))}
+            {stat("Notional std dev", fmtUSD(t.std_size_of_trade_notional))}
           </StatGrid>
 
-          <Subhead title="胜负分布" />
+          <Subhead title="Winners vs. losers" />
           <StatGrid>
             {statColored(
-              "盈利单平均净盈亏",
+              "Avg net PnL (wins)",
               fmtUSD(w.avg_winners_net_pnl),
               w.avg_winners_net_pnl,
             )}
             {statColored(
-              "亏损单平均净盈亏",
+              "Avg net PnL (losses)",
               fmtUSD(w.avg_losers_net_pnl),
               w.avg_losers_net_pnl,
             )}
-            {stat("盈利单平均持有", minsCompact(w.avg_winners_holding_period))}
-            {stat("亏损单平均持有", minsCompact(w.avg_losers_holding_period))}
-            {stat("盈利单平均名义", fmtUSD(w.avg_winners_notional))}
-            {stat("亏损单平均名义", fmtUSD(w.avg_losers_notional))}
+            {stat("Avg hold (wins)", minsCompact(w.avg_winners_holding_period))}
+            {stat("Avg hold (losses)", minsCompact(w.avg_losers_holding_period))}
+            {stat("Avg notional (wins)", fmtUSD(w.avg_winners_notional))}
+            {stat("Avg notional (losses)", fmtUSD(w.avg_losers_notional))}
           </StatGrid>
 
-          <Subhead title="信号统计" />
+          <Subhead title="Signal stats" />
           <StatGrid>
-            {stat("总信号数", intFmt(s.total_signals))}
-            {stat("多/空/持有/平仓占比", percentMix(s))}
-            {stat("空仓时间占比", pctFmt(s.pct_mins_flat_combined))}
-            {stat("平均置信度（总）", pctFrom0to1(s.avg_confidence))}
-            {stat("平均置信度（多）", pctFrom0to1(s.avg_confidence_long))}
-            {stat("平均置信度（平仓）", pctFrom0to1(s.avg_confidence_close))}
+            {stat("Total signals", intFmt(s.total_signals))}
+            {stat("Long/short/hold/close mix", percentMix(s))}
+            {stat("Flat time share", pctFmt(s.pct_mins_flat_combined))}
+            {stat("Avg confidence (overall)", pctFrom0to1(s.avg_confidence))}
+            {stat("Avg confidence (long)", pctFrom0to1(s.avg_confidence_long))}
+            {stat("Avg confidence (close)", pctFrom0to1(s.avg_confidence_close))}
           </StatGrid>
 
-          <Subhead title="调用节奏" />
+          <Subhead title="Invocation cadence" />
           <StatGrid>
-            {stat("调用次数", intFmt(inv.num_invocations))}
-            {stat("平均间隔", minsCompact(inv.avg_invocation_break_mins))}
+            {stat("Invocation count", intFmt(inv.num_invocations))}
+            {stat("Avg interval", minsCompact(inv.avg_invocation_break_mins))}
             {stat(
-              "最小/最大间隔",
+              "Min/Max interval",
               rangeFmt(
                 inv.min_invocation_break_mins,
                 inv.max_invocation_break_mins,
@@ -123,24 +123,24 @@ export default function ModelAnalyticsDetails({
             )}
           </StatGrid>
 
-          <Subhead title="多空交易拆分" />
+          <Subhead title="Long/short breakdown" />
           <StatGrid>
             {stat(
-              "多/空交易数",
+              "Long/short trade count",
               `${intFmt(ls.num_long_trades)} / ${intFmt(ls.num_short_trades)}`,
             )}
             {statColored(
-              "多头平均净盈亏",
+              "Avg net PnL (long)",
               fmtUSD(ls.avg_longs_net_pnl),
               ls.avg_longs_net_pnl,
             )}
             {statColored(
-              "空头平均净盈亏",
+              "Avg net PnL (short)",
               fmtUSD(ls.avg_shorts_net_pnl),
               ls.avg_shorts_net_pnl,
             )}
             {stat(
-              "多/空平均持有",
+              "Avg hold (long/short)",
               `${minsCompact(ls.avg_longs_holding_period)} / ${minsCompact(ls.avg_shorts_holding_period)}`,
             )}
           </StatGrid>
@@ -296,9 +296,9 @@ function percentMix(s: any) {
     H = s.hold_signal_pct,
     C = s.close_signal_pct;
   const parts: string[] = [];
-  if (L != null) parts.push(`多${L.toFixed(1)}%`);
-  if (S != null) parts.push(`空${S.toFixed(1)}%`);
-  if (H != null) parts.push(`持有${H.toFixed(1)}%`);
-  if (C != null) parts.push(`平仓${C.toFixed(1)}%`);
+  if (L != null) parts.push(`Long ${L.toFixed(1)}%`);
+  if (S != null) parts.push(`Short ${S.toFixed(1)}%`);
+  if (H != null) parts.push(`Hold ${H.toFixed(1)}%`);
+  if (C != null) parts.push(`Close ${C.toFixed(1)}%`);
   return parts.length ? parts.join(" · ") : "—";
 }

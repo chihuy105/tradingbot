@@ -23,7 +23,7 @@ export function useLatestEquityMap() {
   );
   const map: Record<string, number> = {};
   const rows = data?.accountTotals ?? [];
-  // 取每个模型最新一条记录的 dollar_equity（回退 account_value/equity）
+  // Use the latest snapshot per model, preferring dollar_equity (fall back to account_value/equity)
   const latest = new Map<string, Row>();
   for (const r of rows) {
     const id = String((r as any).model_id ?? (r as any).id ?? "");

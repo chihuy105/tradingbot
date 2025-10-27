@@ -40,14 +40,14 @@ export default function Modal({
             className="text-sm font-semibold"
             style={{ color: "var(--foreground)" }}
           >
-            {title ?? "详情"}
+            {title ?? "Details"}
           </h3>
           <button
             className="rounded px-2 py-1 text-xs chip-btn"
             style={{ color: "var(--muted-text)" }}
             onClick={onClose}
           >
-            关闭
+            Close
           </button>
         </div>
         <div className="text-sm" style={{ color: "var(--foreground)" }}>
