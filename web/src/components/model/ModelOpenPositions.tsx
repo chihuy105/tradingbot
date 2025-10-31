@@ -38,7 +38,7 @@ export default function ModelOpenPositions({ modelId }: { modelId: string }) {
     [positionsRaw],
   );
 
-  // 顶部小计
+  // Totals summary at the top
   const totalUnreal = positions.reduce(
     (acc, p: any) => acc + (p.unrealized_pnl || 0),
     0,
@@ -51,10 +51,10 @@ export default function ModelOpenPositions({ modelId }: { modelId: string }) {
           className="ui-sans mb-2 text-sm font-semibold"
           style={{ color: "var(--foreground)" }}
         >
-          当前持仓 · {getModelName(modelId)}
+          Current positions · {getModelName(modelId)}
         </div>
         <div className={`text-sm`} style={{ color: "var(--muted-text)" }}>
-          暂无持仓。
+          No open positions.
         </div>
       </div>
     );
@@ -66,10 +66,10 @@ export default function ModelOpenPositions({ modelId }: { modelId: string }) {
           className="text-sm font-semibold"
           style={{ color: "var(--foreground)" }}
         >
-          当前持仓 · {getModelName(modelId)}
+          Current positions · {getModelName(modelId)}
         </div>
         <div className="text-xs" style={{ color: "var(--muted-text)" }}>
-          未实现盈亏合计：
+          Total unrealized PnL:
           <span
             className={totalUnreal >= 0 ? "text-green-400" : "text-red-400"}
           >
@@ -91,17 +91,17 @@ export default function ModelOpenPositions({ modelId }: { modelId: string }) {
               className={clsx("border-b")}
               style={{ borderColor: "var(--panel-border)" }}
             >
-              <th className="py-1.5 pr-3">入场时间</th>
-              <th className="py-1.5 pr-3">币种</th>
-              <th className="py-1.5 pr-3">入场价</th>
-              <th className="py-1.5 pr-3">方向</th>
-              <th className="py-1.5 pr-3">数量</th>
-              <th className="py-1.5 pr-3">杠杆</th>
-              <th className="py-1.5 pr-3">强平价</th>
-              <th className="py-1.5 pr-3">保证金</th>
-              <th className="py-1.5 pr-3">名义金额</th>
-              <th className="py-1.5 pr-3">未实现盈亏</th>
-              <th className="py-1.5 pr-3">退出计划</th>
+              <th className="py-1.5 pr-3">Entry time</th>
+              <th className="py-1.5 pr-3">Symbol</th>
+              <th className="py-1.5 pr-3">Entry price</th>
+              <th className="py-1.5 pr-3">Side</th>
+              <th className="py-1.5 pr-3">Quantity</th>
+              <th className="py-1.5 pr-3">Leverage</th>
+              <th className="py-1.5 pr-3">Liquidation price</th>
+              <th className="py-1.5 pr-3">Margin</th>
+              <th className="py-1.5 pr-3">Notional</th>
+              <th className="py-1.5 pr-3">Unrealized PnL</th>
+              <th className="py-1.5 pr-3">Exit plan</th>
             </tr>
           </thead>
           <tbody style={{ color: "var(--foreground)" }}>
@@ -133,7 +133,7 @@ export default function ModelOpenPositions({ modelId }: { modelId: string }) {
                     className="py-1.5 pr-3"
                     style={{ color: isLong ? "#16a34a" : "#ef4444" }}
                   >
-                    {isLong ? "做多" : "做空"}
+                    {isLong ? "Long" : "Short"}
                   </td>
                   <td className="py-1.5 pr-3 tabular-nums">
                     {fmtNumber(Math.abs(p.quantity), 2)}
@@ -178,7 +178,7 @@ function renderExitPlan(plan?: any) {
       className="ui-sans text-[11px]"
       style={{ color: "var(--muted-text)" }}
     >
-      目标 {plan.profit_target ?? "—"}，止损 {plan.stop_loss ?? "—"}
+      Target {plan.profit_target ?? "—"}, stop {plan.stop_loss ?? "—"}
     </span>
   ) as any;
 }

@@ -27,7 +27,7 @@ export function ExitPlanModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={`退出计划 • ${modelId} • ${symbol}`}
+      title={`Exit plan • ${modelId} • ${symbol}`}
     >
       {hasPlan ? (
         <div className="space-y-2">
@@ -35,7 +35,7 @@ export function ExitPlanModal({
             className="flex items-center justify-between"
             style={{ color: "var(--muted-text)" }}
           >
-            <span>目标价</span>
+            <span>Target price</span>
             <span className="tabular-nums">
               {exitPlan?.profit_target != null
                 ? fmtUSD(exitPlan?.profit_target)
@@ -46,14 +46,14 @@ export function ExitPlanModal({
             className="flex items-center justify-between"
             style={{ color: "var(--muted-text)" }}
           >
-            <span>止损价</span>
+            <span>Stop loss</span>
             <span className="tabular-nums">
               {exitPlan?.stop_loss != null ? fmtUSD(exitPlan?.stop_loss) : "—"}
             </span>
           </div>
           <div>
             <div className="mb-1" style={{ color: "var(--muted-text)" }}>
-              失效条件
+              Invalidation condition
             </div>
             <p
               className="whitespace-pre-wrap"
@@ -64,7 +64,7 @@ export function ExitPlanModal({
           </div>
         </div>
       ) : (
-        <div style={{ color: "var(--muted-text)" }}>暂无退出计划。</div>
+        <div style={{ color: "var(--muted-text)" }}>No exit plan yet.</div>
       )}
     </Modal>
   );

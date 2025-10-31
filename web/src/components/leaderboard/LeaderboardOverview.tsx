@@ -63,29 +63,29 @@ export default function LeaderboardOverview({
 
   return (
     <div className="space-y-3">
-      {/* 控制区：左侧边缘对齐，位于表格上方 */}
+      {/* Controls aligned to the left, above the table */}
       <div className="flex items-center gap-2">
         <TabButton active={tab === "overall"} onClick={() => setTab("overall")}>
-          总体统计
+          Overall stats
         </TabButton>
         <TabButton
           active={tab === "advanced"}
           onClick={() => setTab("advanced")}
         >
-          高级分析
+          Advanced analytics
         </TabButton>
       </div>
-      {/* 排行榜表格 */}
+      {/* Leaderboard table */}
       <LeaderboardTable mode={tab} />
 
-      {/* 摘要区块 */}
+      {/* Summary deck */}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <WinnerCard id={top?.id} equity={top?.equity} />
-        <SummaryCard title="总权益" value={fmtUSD(totalEquity || 0)} />
+        <SummaryCard title="Total equity" value={fmtUSD(totalEquity || 0)} />
         <ActivePositions symbols={activeSymbols} />
       </div>
 
-      {/* 条形图：各模型账户价值 */}
+      {/* Bar chart: equity per model */}
       {!!rows?.length && <Bars rows={rowsWithEq} />}
     </div>
   );
@@ -125,7 +125,7 @@ function WinnerCard({ id, equity }: { id?: string; equity?: number }) {
       }}
     >
       <div className="ui-sans text-xs" style={{ color: "var(--muted-text)" }}>
-        最佳模型
+        Top model
       </div>
       <div className="mt-2 flex items-center gap-2">
         {id ? <ModelLogoChip modelId={id} size="md" /> : null}
@@ -177,7 +177,7 @@ function ActivePositions({ symbols }: { symbols: string[] }) {
       }}
     >
       <div className="ui-sans text-xs" style={{ color: "var(--muted-text)" }}>
-        持仓概览
+        Positions overview
       </div>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         {symbols.length ? (
@@ -195,7 +195,7 @@ function ActivePositions({ symbols }: { symbols: string[] }) {
           ))
         ) : (
           <span className="text-xs" style={{ color: "var(--muted-text)" }}>
-            暂无持仓
+            No positions
           </span>
         )}
       </div>
@@ -204,8 +204,8 @@ function ActivePositions({ symbols }: { symbols: string[] }) {
 }
 
 function Bars({ rows }: { rows: { id: string; equity: number }[] }) {
-  const FULL = 120; // 固定容器高度
-  // 自适应刻度：向上取整到最近的 2k 档，并至少 12k
+  const FULL = 120; // Fixed container height
+  // Adaptive scale: round up to the nearest 2k step, minimum 12k
   const maxEq = Math.max(...rows.map((r) => Number(r.equity || 0)), 1);
   const SCALE = Math.max(12000, Math.ceil(maxEq / 2000) * 2000);
   return (
@@ -217,7 +217,7 @@ function Bars({ rows }: { rows: { id: string; equity: number }[] }) {
       }}
     >
       <div className="ui-sans text-xs" style={{ color: "var(--muted-text)" }}>
-        账户价值
+        Account value
       </div>
       <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-6 md:grid-cols-6">
         {rows.map((r) => {
@@ -226,7 +226,7 @@ function Bars({ rows }: { rows: { id: string; equity: number }[] }) {
           const pct = Math.max(0, Math.min(eq / SCALE, 1));
           const fill = Math.max(2, Math.round(pct * FULL));
           const icon = getModelIcon(r.id);
-          const ICON = 16; // logo 直径
+          const ICON = 16; // Logo diameter
           return (
             <div key={r.id} className="flex flex-col items-center gap-1">
               <div

@@ -57,7 +57,7 @@ export default function ModelDetailsPanel({
   if (!modelId)
     return (
       <div className="text-xs" style={{ color: "var(--muted-text)" }}>
-        请选择模型（右上筛选的“模型”）。
+        Please select a model (use the `Model` filter in the top right).
       </div>
     );
 
@@ -71,7 +71,7 @@ export default function ModelDetailsPanel({
           {getModelName(modelId)}
         </div>
         <div className={`text-xs`} style={{ color: "var(--muted-text)" }}>
-          模型ID：{modelId}
+          Model ID: {modelId}
         </div>
       </div>
 
@@ -80,7 +80,7 @@ export default function ModelDetailsPanel({
         style={{ color: "var(--muted-text)" }}
       >
         <div>
-          净值：
+          Equity:
           <span className="tabular-nums">
             {fmtUSD(
               latest?.dollar_equity ?? latest?.equity ?? latest?.account_value,
@@ -88,7 +88,7 @@ export default function ModelDetailsPanel({
           </span>
         </div>
         <div>
-          累计收益：
+          Cumulative return:
           <span className={pnlClass(latest?.cum_pnl_pct)}>
             {latest?.cum_pnl_pct != null
               ? `${latest.cum_pnl_pct.toFixed(2)}%`
@@ -96,13 +96,13 @@ export default function ModelDetailsPanel({
           </span>
         </div>
         <div>
-          已实现盈亏：
+          Realized PnL:
           <span className={pnlClass(latest?.realized_pnl)}>
             {fmtUSD(latest?.realized_pnl)}
           </span>
         </div>
         <div>
-          未实现盈亏：
+          Unrealized PnL:
           <span className={pnlClass(latest?.total_unrealized_pnl)}>
             {fmtUSD(latest?.total_unrealized_pnl)}
           </span>
@@ -120,7 +120,7 @@ export default function ModelDetailsPanel({
             color: "var(--muted-text)",
           }}
         >
-          当前持仓
+          Current positions
         </div>
         <div className="max-h-64 overflow-auto">
           <table className="w-full text-left text-[11px]">
@@ -129,12 +129,12 @@ export default function ModelDetailsPanel({
                 className={`border-b`}
                 style={{ borderColor: "var(--panel-border)" }}
               >
-                <th className="py-1.5 pr-3">方向</th>
-                <th className="py-1.5 pr-3">币种</th>
-                <th className="py-1.5 pr-3">杠杆</th>
-                <th className="py-1.5 pr-3">入场价</th>
-                <th className="py-1.5 pr-3">当前价</th>
-                <th className="py-1.5 pr-3">未实现盈亏</th>
+                <th className="py-1.5 pr-3">Side</th>
+                <th className="py-1.5 pr-3">Symbol</th>
+                <th className="py-1.5 pr-3">Leverage</th>
+                <th className="py-1.5 pr-3">Entry price</th>
+                <th className="py-1.5 pr-3">Current price</th>
+                <th className="py-1.5 pr-3">Unrealized PnL</th>
               </tr>
             </thead>
             <tbody style={{ color: "var(--foreground)" }}>
@@ -174,7 +174,7 @@ export default function ModelDetailsPanel({
                     style={{ color: "var(--muted-text)" }}
                     colSpan={6}
                   >
-                    暂无持仓
+                    No open positions
                   </td>
                 </tr>
               )}
@@ -194,7 +194,7 @@ export default function ModelDetailsPanel({
             color: "var(--muted-text)",
           }}
         >
-          最近成交
+          Recent trades
         </div>
         <div className="max-h-48 overflow-auto">
           <table className="w-full text-left text-[11px]">
@@ -203,10 +203,10 @@ export default function ModelDetailsPanel({
                 className={`border-b`}
                 style={{ borderColor: "var(--panel-border)" }}
               >
-                <th className="py-1.5 pr-3">币种</th>
-                <th className="py-1.5 pr-3">方向</th>
-                <th className="py-1.5 pr-3">杠杆</th>
-                <th className="py-1.5 pr-3">净盈亏</th>
+                <th className="py-1.5 pr-3">Symbol</th>
+                <th className="py-1.5 pr-3">Side</th>
+                <th className="py-1.5 pr-3">Leverage</th>
+                <th className="py-1.5 pr-3">Net PnL</th>
               </tr>
             </thead>
             <tbody style={{ color: "var(--foreground)" }}>
@@ -237,7 +237,7 @@ export default function ModelDetailsPanel({
                     style={{ color: "var(--muted-text)" }}
                     colSpan={4}
                   >
-                    暂无成交
+                    No trades yet
                   </td>
                 </tr>
               )}

@@ -53,19 +53,19 @@ export default function ModelChatPanel() {
   if (isLoading)
     return (
       <div className={`text-xs`} style={{ color: "var(--muted-text)" }}>
-        加载模型对话中…
+        Loading model conversations…
       </div>
     );
   if (isError)
     return (
       <div className={`text-xs`} style={{ color: "red" }}>
-        模型对话接口暂不可用，请稍后重试。
+        Model conversation API is temporarily unavailable. Please try again later.
       </div>
     );
   if (!list.length)
     return (
       <div className={`text-xs`} style={{ color: "var(--muted-text)" }}>
-        暂无模型对话。
+        No model conversations yet.
       </div>
     );
 
@@ -128,7 +128,7 @@ function FilterBar({
       className="mb-1 flex items-center gap-2 text-[12px]"
       style={{ color: "var(--muted-text)" }}
     >
-      <span className={`ui-sans font-semibold tracking-wide`}>筛选：</span>
+      <span className={`ui-sans font-semibold tracking-wide`}>Filter:</span>
       <select
         className={`rounded border px-2 py-1 text-xs`}
         style={{
@@ -141,7 +141,7 @@ function FilterBar({
       >
         {uniq.map((m) => (
           <option key={m} value={m}>
-            {m === "ALL" ? "全部模型" : m}
+            {m === "ALL" ? "All models" : m}
           </option>
         ))}
       </select>
@@ -212,7 +212,7 @@ function ChatCard({
             style={{ color: "var(--muted-text)" }}
             onClick={() => setOpen(!open)}
           >
-            {open ? "收起" : "点击展开"}
+            {open ? "Collapse" : "Expand"}
           </button>
           {/* translation toggle removed */}
         </div>
@@ -247,7 +247,7 @@ function ChatCard({
             className={`ui-sans mb-1 text-[11px] font-semibold`}
             style={{ color: "var(--muted-text)" }}
           >
-            历史对话
+            Conversation history
           </div>
           <div className="space-y-2">
             {history.slice(0, 5).map((h, idx) => {
@@ -271,7 +271,7 @@ function ChatCard({
                         setOpenHist({ ...openHist, [key]: !isOpen })
                       }
                     >
-                      {isOpen ? "收起" : "点击展开"}
+                      {isOpen ? "Collapse" : "Expand"}
                     </button>
                   </div>
                   {isOpen && (
@@ -450,7 +450,7 @@ function renderDecisions(resp: any) {
                   className="text-[11px] tabular-nums"
                   style={{ color: "var(--muted-text)" }}
                 >
-                  数量：{r.quantity ?? "—"}
+                  Quantity: {r.quantity ?? "—"}
                 </div>
               </div>
             </div>
@@ -478,9 +478,9 @@ function renderDecisions(resp: any) {
 
 function signalZh(s?: string) {
   const k = String(s || "").toLowerCase();
-  if (k === "hold") return "持有";
-  if (k === "buy" || k === "long") return "做多";
-  if (k === "sell" || k === "short") return "做空";
+  if (k === "hold") return "Hold";
+  if (k === "buy" || k === "long") return "Long";
+  if (k === "sell" || k === "short") return "Short";
   return s ?? "—";
 }
 

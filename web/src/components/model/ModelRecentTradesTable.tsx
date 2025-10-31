@@ -26,7 +26,7 @@ export default function ModelRecentTradesTable({
         className="ui-sans mb-2 text-sm font-semibold"
         style={{ color: "var(--foreground)" }}
       >
-        最近成交（25）
+        Recent trades (25)
       </div>
       <div className="overflow-x-auto" style={{ overflowY: "visible" }}>
         <table className="w-full text-left text-[12px] terminal-text">
@@ -41,16 +41,16 @@ export default function ModelRecentTradesTable({
               className="border-b"
               style={{ borderColor: "var(--panel-border)" }}
             >
-              <th className="py-1.5 pr-3">方向</th>
-              <th className="py-1.5 pr-3">币种</th>
-              <th className="py-1.5 pr-3">入场价</th>
-              <th className="py-1.5 pr-3">出场价</th>
-              <th className="py-1.5 pr-3">数量</th>
-              <th className="py-1.5 pr-3">持有时长</th>
-              <th className="py-1.5 pr-3">名义入场</th>
-              <th className="py-1.5 pr-3">名义离场</th>
-              <th className="py-1.5 pr-3">手续费</th>
-              <th className="py-1.5 pr-3">净盈亏</th>
+              <th className="py-1.5 pr-3">Side</th>
+              <th className="py-1.5 pr-3">Symbol</th>
+              <th className="py-1.5 pr-3">Entry price</th>
+              <th className="py-1.5 pr-3">Exit price</th>
+              <th className="py-1.5 pr-3">Quantity</th>
+              <th className="py-1.5 pr-3">Hold time</th>
+              <th className="py-1.5 pr-3">Notional in</th>
+              <th className="py-1.5 pr-3">Notional out</th>
+              <th className="py-1.5 pr-3">Fees</th>
+              <th className="py-1.5 pr-3">Net PnL</th>
             </tr>
           </thead>
           <tbody style={{ color: "var(--foreground)" }}>
@@ -61,7 +61,7 @@ export default function ModelRecentTradesTable({
                   colSpan={10}
                   style={{ color: "var(--muted-text)" }}
                 >
-                  加载中…
+                  Loading…
                 </td>
               </tr>
             ) : rows.length ? (
@@ -124,7 +124,7 @@ export default function ModelRecentTradesTable({
                   colSpan={10}
                   style={{ color: "var(--muted-text)" }}
                 >
-                  暂无成交
+                  No trades yet
                 </td>
               </tr>
             )}

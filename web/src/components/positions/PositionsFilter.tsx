@@ -39,19 +39,19 @@ export default function PositionsFilter({
       style={{ color: "var(--muted-text)" }}
     >
       <Select
-        label="模型"
+        label="Model"
         value={model}
         options={modelOptions}
         onChange={(v) => setQuery({ model: v })}
       />
       <Select
-        label="币种"
+        label="Symbol"
         value={symbol}
         options={symbolOptions}
         onChange={(v) => setQuery({ symbol: v })}
       />
       <Select
-        label="方向"
+        label="Side"
         value={side}
         options={SIDES as unknown as string[]}
         onChange={(v) => setQuery({ side: v })}

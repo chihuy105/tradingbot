@@ -134,7 +134,7 @@ export function useSharpeMap() {
   const bench = benchDailyReturns(rows);
   const arr = trades?.trades ?? [];
 
-  // 取出所有模型 id（排除基准）
+  // Extract all model ids (excluding benchmarks)
   const ids = Array.from(
     new Set(
       arr.map((t) => t.model_id).filter((id) => id && id !== "buynhold_btc"),

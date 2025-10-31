@@ -26,7 +26,7 @@ export interface AnalyticsRow {
     avg_leverage_long?: number;
   };
   overall_trades_overview_table?: {
-    avg_convo_leverage?: number; // 用户指定：用于“平均杠杆”的权威口径
+    avg_convo_leverage?: number; // Client-provided authoritative source for "average leverage"
   };
 }
 

@@ -128,7 +128,7 @@ export default function AccountValueChart() {
     return base;
   }
 
-  // Append-only updates to避免整表重建
+  // Append-only updates to avoid rebuilding the entire table
   useEffect(() => {
     if (!series.length) return;
     const nextIds = Array.from(new Set([...(ids || []), ...modelIds]));
@@ -310,7 +310,7 @@ export default function AccountValueChart() {
     const haloR = Math.round((endLogoBaseSize / 3) * (2 / 3));
     const valueStr = formatValue(lastValById[id]);
     const isVisible = active.size ? active.has(id) : true;
-    const showValueChip = isVisible; // 始终展示可见系列的数值
+    const showValueChip = isVisible; // Always show values for visible series
     const fontSize = vw < 380 ? 11 : vw < 640 ? 12 : 13;
     // Rough width estimate for mono-ish font
     const chipPadX = 8;
@@ -418,7 +418,7 @@ export default function AccountValueChart() {
           className={`text-xs font-semibold tracking-wider`}
           style={{ color: "var(--muted-text)" }}
         >
-          账户总资产
+          Total account value
         </div>
         {/* Small top-right range/unit toggles */}
         <div className="hidden sm:flex items-center gap-2 text-[11px]">
@@ -470,7 +470,9 @@ export default function AccountValueChart() {
       </div>
       {/* Legend below chart */}
       <ErrorBanner
-        message={isError ? "账户价值数据源暂时不可用，请稍后重试。" : undefined}
+        message={
+          isError ? "Account value data source is temporarily unavailable. Please try again later." : undefined
+        }
       />
       <div className="w-full flex-1 min-h-0 flex flex-col">
         {isLoading ? (
@@ -764,12 +766,12 @@ export default function AccountValueChart() {
             className="flex h-full flex-col items-center justify-center gap-2 text-sm"
             style={{ color: "var(--muted-text)" }}
           >
-            <div>暂无足够的图表数据（需要至少 2 个时间点）。</div>
+            <div>Not enough chart data (requires at least 2 timestamps).</div>
             <div className="text-xs" style={{ color: "var(--muted-text)" }}>
-              建议保持页面打开几分钟，我们会按 5 秒节奏累积最新净值点。
+              We recommend keeping the page open for a few minutes; we add new NAV points every 5 seconds.
             </div>
             <div className="text-xs" style={{ color: "var(--muted-text)" }}>
-              调试：
+              Debug:
               <a
                 className="underline"
                 href="/api/nof1/since-inception-values"

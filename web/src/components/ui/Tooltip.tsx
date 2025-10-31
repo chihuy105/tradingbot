@@ -27,8 +27,8 @@ export default function Tooltip({
   const closeTimer = useRef<any>(null);
   const raf = useRef<number | null>(null);
   const [coarse, setCoarse] = useState(false);
-  const EDGE = 12; // 视口边距
-  const MAXW = 420; // 桌面最大宽度
+  const EDGE = 12; // Viewport padding
+  const MAXW = 420; // Max width on desktop
 
   useEffect(() => {
     try {
@@ -52,7 +52,7 @@ export default function Tooltip({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
-    // 捕获阶段尽早关闭，避免被其它组件阻止冒泡
+    // Close early in the capture phase to avoid other components swallowing the event
     document.addEventListener("pointerdown", onDoc, { capture: true });
     document.addEventListener("click", onDoc, { capture: true });
     document.addEventListener("touchstart", onDoc, { capture: true });
@@ -161,7 +161,7 @@ export default function Tooltip({
       onFocus={() => setOpen(true)}
       onBlur={() => setOpen(false)}
       onClick={() => {
-        // 触屏点击用于开/关；桌面点击不改变状态
+      // Taps toggle on touchscreens; clicks on desktop do not change state
         if (coarse) setOpen((v) => !v);
       }}
       onTouchStart={() => {
@@ -177,7 +177,7 @@ export default function Tooltip({
         pos &&
         createPortal(
           <>
-            {/* 在桌面悬浮模式不渲染遮罩，避免阻挡鼠标；触屏设备保留遮罩用于关闭 */}
+            {/* Skip the backdrop in desktop hover mode to avoid blocking the cursor; keep it on touch devices for closing */}
             {coarse && (
               <span
                 className="fixed inset-0 z-[9998]"
@@ -188,7 +188,7 @@ export default function Tooltip({
             <div
               ref={tipRef as any}
               className={clsx(
-                // 桌面悬浮下禁用指针事件，避免拦截鼠标
+                // Disable pointer events in desktop hover mode so the tooltip doesn't block the cursor
                 coarse ? "pointer-events-auto" : "pointer-events-none",
                 "fixed z-[9999] rounded-md border p-2 text-[11px] shadow-lg",
                 transform,

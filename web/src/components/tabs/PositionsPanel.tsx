@@ -42,7 +42,7 @@ export function PositionsPanel() {
         }}
       >
         <div className={`mb-2 text-sm`} style={{ color: "var(--muted-text)" }}>
-          加载持仓中…
+          Loading positions…
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
@@ -59,7 +59,7 @@ export function PositionsPanel() {
   if (!positionsByModel.length) {
     return (
       <div className={`text-sm`} style={{ color: "var(--muted-text)" }}>
-        暂无持仓。
+        No open positions.
       </div>
     );
   }
@@ -67,7 +67,9 @@ export function PositionsPanel() {
   return (
     <div className="space-y-3">
       <ErrorBanner
-        message={isError ? "上游持仓接口暂时不可用，请稍后重试。" : undefined}
+        message={
+          isError ? "Position data source is temporarily unavailable. Please try again later." : undefined
+        }
       />
       <PositionsFilter
         models={positionsByModel.map((m) => m.id)}
@@ -171,7 +173,7 @@ export function PositionsPanel() {
                   className={`ui-sans text-[11px]`}
                   style={{ color: "var(--muted-text)" }}
                 >
-                  未实现盈亏合计：
+                  Total unrealized PnL:
                   <span
                     className={
                       totalUnreal >= 0 ? "text-green-400" : "text-red-400"
@@ -186,22 +188,22 @@ export function PositionsPanel() {
                 style={{ color: "var(--muted-text)" }}
               >
                 <div>
-                  净值：<span className="tabular-nums">{fmtUSD(equity)}</span>
+                  Equity: <span className="tabular-nums">{fmtUSD(equity)}</span>
                 </div>
                 <div>
-                  已实现盈亏：
+                  Realized PnL:
                   <span className="tabular-nums">{fmtUSD(realizedPnL)}</span>
                 </div>
                 <div>
-                  可用现金≈
+                  Available cash ≈
                   <span className="tabular-nums">{fmtUSD(availableCash)}</span>
                 </div>
                 <div>
-                  风险金额合计：
+                  Total risk amount:
                   <span className="tabular-nums">{fmtUSD(sumRisk)}</span>
                 </div>
                 <div>
-                  平均置信度：
+                  Avg confidence:
                   <span className="tabular-nums">
                     {avgConf ? (avgConf * 100).toFixed(1) + "%" : "—"}
                   </span>
@@ -220,12 +222,12 @@ export function PositionsPanel() {
                       className={clsx("border-b")}
                       style={{ borderColor: "var(--panel-border)" }}
                     >
-                      <th className="py-1.5 pr-3">方向</th>
-                      <th className="py-1.5 pr-3">币种</th>
-                      <th className="py-1.5 pr-3">杠杆</th>
-                      <th className="py-1.5 pr-3">名义金额</th>
-                      <th className="py-1.5 pr-3">退出计划</th>
-                      <th className="py-1.5 pr-3">未实现盈亏</th>
+                      <th className="py-1.5 pr-3">Side</th>
+                      <th className="py-1.5 pr-3">Symbol</th>
+                      <th className="py-1.5 pr-3">Leverage</th>
+                      <th className="py-1.5 pr-3">Notional</th>
+                      <th className="py-1.5 pr-3">Exit plan</th>
+                      <th className="py-1.5 pr-3">Unrealized PnL</th>
                     </tr>
                   </thead>
                   <tbody style={{ color: "var(--foreground)" }}>
@@ -246,7 +248,7 @@ export function PositionsPanel() {
                             className="py-1.5 pr-3"
                             style={{ color: isLong ? "#16a34a" : "#ef4444" }}
                           >
-                            {isLong ? "做多" : "做空"}
+                            {isLong ? "Long" : "Short"}
                           </td>
                           <td className="py-1.5 pr-3">
                             <span className="inline-flex items-center gap-1">
@@ -343,7 +345,7 @@ function ExitPlanPeek({ plan }: { plan?: any }) {
         }}
         onClick={() => setOpen((v) => !v)}
       >
-        查看
+        View
       </button>
       {open &&
         pos &&
@@ -362,19 +364,19 @@ function ExitPlanPeek({ plan }: { plan?: any }) {
               color: "var(--foreground)",
             }}
           >
-            <div className="ui-sans mb-1 font-semibold">退出计划</div>
+            <div className="ui-sans mb-1 font-semibold">Exit plan</div>
             <div className="terminal-text text-xs leading-relaxed">
               <div>
-                目标价：
+                Target price:
                 <span className="tabular-nums">
                   {plan.profit_target ?? "—"}
                 </span>
               </div>
               <div>
-                止损价：
+                Stop loss:
                 <span className="tabular-nums">{plan.stop_loss ?? "—"}</span>
               </div>
-              <div>失效条件：</div>
+              <div>Invalidation condition:</div>
               <div className="whitespace-pre-wrap">
                 {plan.invalidation_condition || "—"}
               </div>

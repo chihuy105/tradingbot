@@ -1,13 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useTheme } from "@/store/useTheme";
+import {Theme, useTheme} from "@/store/useTheme";
+import dynamic from "next/dynamic";
+
+const UserStatus = dynamic(() => import("@/components/auth/UserStatus"), {
+  ssr: false,
+});
 
 export function Header() {
   const theme = useTheme((s) => s.theme);
   const resolved = useTheme((s) => s.resolved);
   const setTheme = useTheme((s) => s.setTheme);
-  // 固定 Twitter/X 关注账号
+  // Fixed Twitter/X account handle
   const TWITTER_HANDLE = "wquguru";
   const barCls = `sticky top-0 z-50 w-full border-b backdrop-blur`;
   const textCls = "";
@@ -26,7 +31,7 @@ export function Header() {
         className={`ui-sans relative flex h-[var(--header-h)] w-full items-center px-3 text-xs`}
         style={{ color: "var(--foreground)" }}
       >
-        {/* 左：品牌 */}
+        {/* Left: brand */}
         <div className="flex min-w-0 flex-1">
           <Link
             href="/"
@@ -37,33 +42,33 @@ export function Header() {
           </Link>
         </div>
 
-        {/* 中：主导航（绝对居中） */}
+        {/* Center: main navigation (absolute centered) */}
         <nav
           className="ui-sans absolute left-1/2 -translate-x-1/2 flex items-center gap-6"
           aria-label="Primary"
         >
           <Link href="/" className={hoverLink} style={{ color: "inherit" }}>
-            实盘
+            Live
           </Link>
           <Link
             href="/leaderboard"
             className={hoverLink}
             style={{ color: "inherit" }}
           >
-            排行榜
+            Leaderboard
           </Link>
           <Link
             href="/models"
             className={hoverLink}
             style={{ color: "inherit" }}
           >
-            模型
+            Models
           </Link>
         </nav>
 
-        {/* 右：主题切换占位，保证中间绝对定位不受挤压 */}
+        {/* Right: reserved space for theme switcher to keep centered nav stable */}
         <div className="flex min-w-0 flex-1 justify-end">
-          {/* 右侧：外链 + 主题切换 */}
+          {/* Right side: external links + theme switcher */}
           <div className="flex items-center gap-2">
             {/* GitHub */}
             <a
@@ -89,7 +94,7 @@ export function Header() {
                 <path d="M12 .5C5.73.5.97 5.26.97 11.54c0 4.86 3.15 8.98 7.52 10.43.55.1.75-.24.75-.53 0-.26-.01-1.13-.02-2.05-3.06.67-3.71-1.3-3.71-1.3-.5-1.28-1.22-1.63-1.22-1.63-.99-.68.08-.67.08-.67 1.09.08 1.66 1.12 1.66 1.12.98 1.67 2.56 1.19 3.19.91.1-.71.38-1.19.69-1.46-2.44-.28-5.01-1.22-5.01-5.42 0-1.2.43-2.18 1.12-2.95-.11-.28-.49-1.42.11-2.96 0 0 .93-.3 3.05 1.13.89-.25 1.84-.38 2.79-.38.95 0 1.9.13 2.79.38 2.12-1.43 3.05-1.13 3.05-1.13.6 1.54.22 2.68.11 2.96.69.77 1.12 1.75 1.12 2.95 0 4.21-2.57 5.14-5.02 5.41.39.34.73 1.01.73 2.03 0 1.46-.01 2.63-.01 2.98 0 .29.19.64.75.53 4.37-1.45 7.52-5.57 7.52-10.43C23.03 5.26 18.27.5 12 .5z" />
               </svg>
             </a>
-            {/* Twitter/X 关注意图 */}
+            {/* Twitter/X follow intent */}
             <a
               href={`https://twitter.com/intent/follow?screen_name=${TWITTER_HANDLE}`}
               target="_blank"
@@ -132,12 +137,15 @@ export function Header() {
                         }
                       : { color: "var(--btn-inactive-fg)" }
                   }
-                  onClick={() => setTheme(t as any)}
+                  onClick={() => setTheme(t as Theme)}
                 >
                   {t}
                 </button>
               ))}
             </div>
+          </div>
+          <div className="ml-3">
+            <UserStatus />
           </div>
         </div>
       </div>

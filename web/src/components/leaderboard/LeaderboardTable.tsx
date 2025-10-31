@@ -37,7 +37,7 @@ export default function LeaderboardTable({
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   const data = useMemo(() => {
-    // 预计算派生指标 + 关联 analytics 字段
+    // Pre-compute derived metrics and merge in analytics fields
     const arr = rows.map((r) =>
       withDerived(
         r,
@@ -69,11 +69,13 @@ export default function LeaderboardTable({
           className={`ui-sans text-sm font-semibold`}
           style={{ color: "var(--foreground)" }}
         >
-          排行榜
+          Leaderboard
         </h2>
       </div>
       <ErrorBanner
-        message={isError ? "排行榜数据源暂时不可用，请稍后重试。" : undefined}
+        message={
+          isError ? "Leaderboard data is temporarily unavailable. Please try again later." : undefined
+        }
       />
       <div className="overflow-x-auto">
         <table className="w-full text-left text-[11px]">
@@ -83,15 +85,15 @@ export default function LeaderboardTable({
               style={{ borderColor: "var(--panel-border)" }}
             >
               <Th label="#" />
-              <Th label="模型" />
+              <Th label="Model" />
               <ThSort
-                label="净值"
+                label="Equity"
                 active={sortKey === "equity"}
                 dir={sortDir}
                 onClick={() => toggleSort("equity")}
               />
               <ThSort
-                label="收益率"
+                label="Return"
                 active={sortKey === "return_pct"}
                 dir={sortDir}
                 onClick={() => toggleSort("return_pct")}
@@ -99,42 +101,42 @@ export default function LeaderboardTable({
               {mode === "advanced" ? (
                 <>
                   <ThSort
-                    label="总盈亏"
+                    label="Total PnL"
                     active={sortKey === "total_pnl"}
                     dir={sortDir}
                     onClick={() => toggleSort("total_pnl")}
                   />
-                  <Th label="费用" />
+                  <Th label="Fees" />
                   <ThSort
-                    label="胜率"
+                    label="Win rate"
                     active={sortKey === "win_rate"}
                     dir={sortDir}
                     onClick={() => toggleSort("win_rate")}
                   />
                   <ThSort
-                    label="最大盈利"
+                    label="Max gain"
                     active={sortKey === "win_dollars"}
                     dir={sortDir}
                     onClick={() => toggleSort("win_dollars")}
                   />
                   <ThSort
-                    label="最大亏损"
+                    label="Max loss"
                     active={sortKey === "lose_dollars"}
                     dir={sortDir}
                     onClick={() => toggleSort("lose_dollars")}
                   />
-                  <Th label="平均置信度" />
-                  <Th label="中位置信度" />
+                  <Th label="Avg confidence" />
+                  <Th label="Median confidence" />
                 </>
               ) : null}
               <ThSort
-                label="交易数"
+                label="Trades"
                 active={sortKey === "num_trades"}
                 dir={sortDir}
                 onClick={() => toggleSort("num_trades")}
               />
               <ThSort
-                label="夏普"
+                label="Sharpe"
                 active={sortKey === "sharpe"}
                 dir={sortDir}
                 onClick={() => toggleSort("sharpe")}
@@ -263,11 +265,11 @@ export default function LeaderboardTable({
     const s = value != null ? value : sharpeStats?.[id]?.sharpe;
     const content = (
       <div className="space-y-1">
-        <div>Sharpe：{s != null ? s.toFixed(3) : "—"}</div>
-        <div>样本天数：{n} 天</div>
-        <div>超额日收益</div>
-        <div className="pl-3">均值：{fmtPct(mean)}</div>
-        <div className="pl-3">标准差：{fmtPct(std)}</div>
+        <div>Sharpe: {s != null ? s.toFixed(3) : "—"}</div>
+        <div>Sample days: {n} days</div>
+        <div>Excess daily return</div>
+        <div className="pl-3">Mean: {fmtPct(mean)}</div>
+        <div className="pl-3">Std dev: {fmtPct(std)}</div>
         <div className="opacity-80">{useSharpeHint()}</div>
       </div>
     );
@@ -289,10 +291,10 @@ export default function LeaderboardTable({
     const avg = a?.fee_pnl_moves_breakdown_table?.avg_taker_fee;
     const content = (
       <div className="space-y-1">
-        <div>费用（USD）：{fees != null ? fmtUSD(fees) : "—"}</div>
-        {avg != null ? <div>平均单笔费：{fmtUSD(avg)}</div> : null}
+        <div>Fees (USD): {fees != null ? fmtUSD(fees) : "—"}</div>
+        {avg != null ? <div>Avg fee per trade: {fmtUSD(avg)}</div> : null}
         <div className="opacity-80">
-          口径：已完成交易的成交手续费总额（含进/出场 taker 费）。
+          Definition: Total execution fees from closed trades (including entry and exit taker fees).
         </div>
       </div>
     );
@@ -310,10 +312,10 @@ export default function LeaderboardTable({
     const wr = rate;
     const content = (
       <div className="space-y-1">
-        <div>胜率：{wr != null ? `${wr.toFixed(1)}%` : "—"}</div>
-        <div>交易数：{trades ?? "—"}</div>
+        <div>Win rate: {wr != null ? `${wr.toFixed(1)}%` : "—"}</div>
+        <div>Trades: {trades ?? "—"}</div>
         <div className="opacity-80">
-          口径：仅统计已完成交易，胜率=胜场数/（胜+负）；未平仓不计入。
+          Definition: Closed trades only. Win rate = wins / (wins + losses); open positions excluded.
         </div>
       </div>
     );
@@ -329,10 +331,9 @@ export default function LeaderboardTable({
   function renderReturnPct(val?: number) {
     const content = (
       <div className="space-y-1">
-        <div>收益率：{val != null ? `${val.toFixed(2)}%` : "—"}</div>
+        <div>Return: {val != null ? `${val.toFixed(2)}%` : "—"}</div>
         <div className="opacity-80">
-          口径：基于账户总权益（包含未平仓盈亏），相对初始资本
-          $10,000；公式：(Equity/Base - 1)。
+          Definition: Based on total account equity (includes unrealized PnL) relative to the $10,000 starting capital. Formula: (Equity / Base - 1).
         </div>
       </div>
     );
@@ -348,10 +349,9 @@ export default function LeaderboardTable({
   function renderTotalPnl(val?: number) {
     const content = (
       <div className="space-y-1">
-        <div>总盈亏：{val != null ? fmtUSD(val) : "—"}</div>
+        <div>Total PnL: {val != null ? fmtUSD(val) : "—"}</div>
         <div className="opacity-80">
-          口径：基于账户总权益（包含未平仓盈亏），相对初始资本
-          $10,000；公式：Equity − Base。
+          Definition: Based on total account equity (includes unrealized PnL) relative to the $10,000 starting capital. Formula: Equity − Base.
         </div>
       </div>
     );
@@ -365,14 +365,14 @@ export default function LeaderboardTable({
   }
 
   function renderExtreme(isWin: boolean, val?: number) {
-    const label = isWin ? "最大盈利" : "最大亏损";
+    const label = isWin ? "Max gain" : "Max loss";
     const content = (
       <div className="space-y-1">
         <div>
-          {label}：{val != null ? fmtUSD(val) : "—"}
+          {label}: {val != null ? fmtUSD(val) : "—"}
         </div>
         <div className="opacity-80">
-          口径：单笔净盈亏（含手续费），仅统计已完成交易。
+          Definition: Net PnL per trade (including fees), closed trades only.
         </div>
       </div>
     );
@@ -386,7 +386,7 @@ export default function LeaderboardTable({
   }
 }
 
-const BASE = 10000; // 初始资金
+const BASE = 10000; // Starting capital
 function withDerived(
   r: LeaderboardRow,
   a?: any,
@@ -397,8 +397,8 @@ function withDerived(
   const winRate = a?.winners_losers_breakdown_table?.win_rate as
     | number
     | undefined;
-  // 从收益率与净值反推总盈亏，避免对初始资金的硬编码
-  // 采用最新快照的 dollar_equity 计算净值/收益率/总盈亏
+  // Derive total PnL from return and equity to avoid hard-coding the base capital
+  // Use the latest snapshot's dollar_equity to compute equity/return/total PnL
   const equity = latestEquity ?? undefined;
   const totalPnl = equity != null ? equity - BASE : undefined;
   const returnPct = equity != null ? ((equity - BASE) / BASE) * 100 : undefined;
@@ -423,7 +423,7 @@ function Th({ label }: { label: string }) {
 }
 
 function useSharpeHint() {
-  return "口径：基于已完成交易的日度超额收益（基准：BTC Buy&Hold），未年化，10%温莎化。";
+  return "Definition: Daily excess returns from closed trades (benchmark: BTC buy & hold), non-annualized, 10% winsorized.";
 }
 
 function ThSort({

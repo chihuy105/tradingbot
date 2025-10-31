@@ -7,6 +7,8 @@ import SWRProvider from "@/components/providers/SWRProvider";
 import ThemeProvider from "@/components/theme/ThemeProvider";
 import PageActivityProvider from "@/components/providers/PageActivityProvider";
 import { Analytics } from "@vercel/analytics/next";
+import ReduxProvider from "@/components/providers/ReduxProvider";
+import AuthInitializer from "@/components/providers/AuthInitializer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,9 +27,9 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "nof0 - AI 模型加密货币交易可视化",
+  title: "nof0 - AI Model Crypto Trading Visualizations",
   description:
-    "用真实数据和清晰可视化，回答「哪个模型更会赚」的朴素问题。展示多个 AI 模型的加密货币交易表现对比。",
+    "Real performance data and clear visuals that answer the simple question: Which model makes more? Compare crypto trading results across multiple AI models.",
 };
 
 export default function RootLayout({
@@ -36,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       {/* Move early theme script into <head> so Next.js can order it correctly */}
       <head>
         <Script id="theme-init" strategy="beforeInteractive">
@@ -53,15 +55,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${plexMono.variable} antialiased`}
       >
-        <ThemeProvider />
-        <PageActivityProvider />
-        <SWRProvider>
-          <div className="min-h-screen">
-            <Header />
-            {children}
-          </div>
-        </SWRProvider>
-        <Analytics />
+        <ReduxProvider>
+          <AuthInitializer />
+          <ThemeProvider />
+          <PageActivityProvider />
+          <SWRProvider>
+            <div className="min-h-screen">
+              <Header />
+              {children}
+            </div>
+          </SWRProvider>
+          <Analytics />
+        </ReduxProvider>
       </body>
     </html>
   );

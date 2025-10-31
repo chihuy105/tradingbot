@@ -13,7 +13,7 @@ export default function ModelSelectorBar({ activeId }: { activeId?: string }) {
   if (isLoading && !models.length) {
     return (
       <div className="text-xs" style={{ color: "var(--muted-text)" }}>
-        加载模型列表…
+        Loading model list…
       </div>
     );
   }
@@ -28,14 +28,14 @@ export default function ModelSelectorBar({ activeId }: { activeId?: string }) {
           color: "var(--muted-text)",
         }}
       >
-        暂无可用模型。
+        No models available.
       </div>
     );
   }
 
   return (
     <div className="space-y-2">
-      {/* 小屏横滑，桌面等宽网格；无边框容器，仅按钮 */}
+      {/* Horizontal scroll on small screens, equal-width grid on desktop; keep container borderless with button styling */}
       <div className="block md:hidden">
         <div
           className="flex flex-nowrap gap-2 overflow-x-auto whitespace-nowrap pr-1"
@@ -62,7 +62,7 @@ function renderChip(id: string, activeId?: string, equity?: number) {
   const active = activeId && id.toLowerCase() === activeId.toLowerCase();
   const icon = getModelIcon(id);
   const color = getModelColor(id);
-  // 由于此处无法直接读取 equity map，简单在父组件传入前已排序；这里展示 id 作为回退
+  // Equity map is sorted before being passed in; show the id as a fallback here
   return (
     <Link
       key={id}
@@ -97,7 +97,7 @@ function renderChip(id: string, activeId?: string, equity?: number) {
           {getModelName(id)}
         </span>
       </div>
-      {/* 次级信息：优先显示净值，回退为模型ID */}
+      {/* Secondary line: prefer equity, fall back to model id */}
       <div
         className="text-[11px] tabular-nums"
         style={{

@@ -62,7 +62,7 @@ export default function TradesTable() {
             className="font-semibold"
             style={{ color: "var(--foreground)" }}
           >
-            筛选：
+            Filter:
           </span>
           <select
             className="rounded border px-2 py-1 text-xs"
@@ -74,7 +74,7 @@ export default function TradesTable() {
             value={search.get("model") || "ALL"}
             onChange={(e) => setQuery("model", e.target.value)}
           >
-            <option value="ALL">全部模型</option>
+            <option value="ALL">All models</option>
             {models.map((m) => (
               <option key={m} value={m}>
                 {getModelName(m)}
@@ -86,12 +86,14 @@ export default function TradesTable() {
           className="text-xs font-semibold tabular-nums ui-sans"
           style={{ color: "var(--muted-text)" }}
         >
-          展示最近 100 笔成交
+          Showing the latest 100 trades
         </div>
       </div>
 
       <ErrorBanner
-        message={isError ? "成交记录数据源暂时不可用，请稍后重试。" : undefined}
+        message={
+          isError ? "Trade history is temporarily unavailable. Please try again later." : undefined
+        }
       />
 
       {/* List */}
@@ -112,7 +114,7 @@ export default function TradesTable() {
           rows.map((t) => <TradeItem key={t.id} t={t} />)
         ) : (
           <div className="p-3 text-xs" style={{ color: "var(--muted-text)" }}>
-            暂无数据
+            No data yet
           </div>
         )}
       </div>
@@ -152,9 +154,9 @@ function TradeItem({ t }: { t: TradeRow }) {
               <ModelLogoChip modelId={t.model_id} size="sm" />
             </span>
             <b style={{ color: modelColor }}>{getModelName(t.model_id)}</b>
-            <span> 完成了一笔 </span>
+            <span> executed a </span>
             <b style={{ color: sideColor }}>{sideZh(t.side)}</b>
-            <span> 交易，标的 </span>
+            <span> trade on </span>
             <span className="inline-flex items-center gap-1 font-semibold">
               <CoinIcon symbol={symbol} />
               <span>{symbol}!</span>
@@ -174,15 +176,15 @@ function TradeItem({ t }: { t: TradeRow }) {
         style={{ color: "var(--foreground)" }}
       >
         <div>
-          价格：{fmtPrice(entry)} → {fmtPrice(exit)}
+          Price: {fmtPrice(entry)} → {fmtPrice(exit)}
         </div>
         <div>
-          数量：<span className="tabular-nums">{fmtNumber(qty, 2)}</span>
+          Quantity: <span className="tabular-nums">{fmtNumber(qty, 2)}</span>
         </div>
         <div>
-          名义金额：{fmtUSD(notionalIn)} → {fmtUSD(notionalOut)}
+          Notional: {fmtUSD(notionalIn)} → {fmtUSD(notionalOut)}
         </div>
-        <div>持有时长：{hold}</div>
+        <div>Hold time: {hold}</div>
       </div>
 
       <div className="mt-2 flex items-baseline gap-2">
@@ -190,7 +192,7 @@ function TradeItem({ t }: { t: TradeRow }) {
           className="ui-sans text-[12px] sm:text-sm"
           style={{ color: "var(--muted-text)" }}
         >
-          净盈亏：
+          Net PnL:
         </span>
         <span
           className="terminal-text tabular-nums text-[13px] sm:text-sm font-semibold"
@@ -255,7 +257,7 @@ function humanHold(entry?: number, exit?: number) {
   const m = Math.floor(ms / 60000);
   const h = Math.floor(m / 60);
   const mm = m % 60;
-  return h ? `${h}小时${mm}分` : `${mm}分`;
+  return h ? `${h}h ${mm}m` : `${mm}m`;
 }
 
 function fmtPrice(n?: number | null) {
@@ -276,5 +278,5 @@ function fmtNumber(n?: number | null, digits = 2) {
 }
 
 function sideZh(s?: string) {
-  return s === "long" ? "做多" : s === "short" ? "做空" : String(s ?? "—");
+  return s === "long" ? "Long" : s === "short" ? "Short" : String(s ?? "—");
 }
