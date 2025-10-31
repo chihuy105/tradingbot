@@ -12,6 +12,7 @@ import { fmtUSD, pnlClass, fmtPct } from "@/lib/utils/formatters";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import { SkeletonRow } from "@/components/ui/Skeleton";
 import clsx from "clsx";
+import { AppButton } from "@/components/ui";
 
 type SortKey =
   | "equity"
@@ -439,8 +440,10 @@ function ThSort({
 }) {
   return (
     <th className="py-1.5 pr-3 text-xs">
-      <button
-        className={clsx("flex items-center gap-1")}
+      <AppButton
+        variant="ghost"
+        size="sm"
+        className={clsx("flex items-center gap-1 !p-0 !border-none")}
         style={{ color: active ? "var(--foreground)" : "var(--muted-text)" }}
         onClick={onClick}
       >
@@ -448,7 +451,7 @@ function ThSort({
         {active ? (
           <span className="text-[10px]">{dir === "asc" ? "▲" : "▼"}</span>
         ) : null}
-      </button>
+      </AppButton>
     </th>
   );
 }

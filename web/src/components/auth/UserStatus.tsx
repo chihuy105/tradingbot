@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { useAuthDispatch, useAppSelector } from "@/store/redux/hooks";
+import {AppButton} from "@/components/ui";
 
 export default function UserStatus() {
   const pathname = usePathname();
@@ -48,15 +49,15 @@ export default function UserStatus() {
   return (
     <div className="flex items-center gap-2 text-xs">
       <span title={user.email}>{user.email}</span>
-      <button
+      <AppButton
         type="button"
-        className="px-2 py-1 border rounded chip-btn"
-        style={{ borderColor: "var(--chip-border)", color: "inherit" }}
+        variant="outline"
+        size="sm"
         onClick={handleLogout}
         disabled={loading}
       >
         {loading ? "…" : "Logout"}
-      </button>
+      </AppButton>
     </div>
   );
 }

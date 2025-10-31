@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {Theme, useTheme} from "@/store/useTheme";
 import dynamic from "next/dynamic";
+import { AppButton } from "@/components/ui";
 
 const UserStatus = dynamic(() => import("@/components/auth/UserStatus"), {
   ssr: false,
@@ -125,22 +126,16 @@ export function Header() {
               style={{ borderColor: "var(--chip-border)" }}
             >
               {["dark", "light", "system"].map((t) => (
-                <button
+                <AppButton
                   key={t}
                   title={t}
-                  className={`px-2 py-1 capitalize chip-btn`}
-                  style={
-                    theme === t
-                      ? {
-                          background: "var(--btn-active-bg)",
-                          color: "var(--btn-active-fg)",
-                        }
-                      : { color: "var(--btn-inactive-fg)" }
-                  }
+                  variant={theme === t ? "default" : "ghost"}
+                  size="sm"
+                  className="capitalize"
                   onClick={() => setTheme(t as Theme)}
                 >
                   {t}
-                </button>
+                </AppButton>
               ))}
             </div>
           </div>

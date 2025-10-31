@@ -21,6 +21,7 @@ import {
 import { adjustLuminance } from "@/lib/ui/useDominantColors";
 import ErrorBanner from "@/components/ui/ErrorBanner";
 import { SkeletonBlock } from "@/components/ui/Skeleton";
+import { AppButton } from "@/components/ui";
 
 type Range = "ALL" | "72H";
 type Mode = "$" | "%";
@@ -427,21 +428,14 @@ export default function AccountValueChart() {
             style={{ borderColor: "var(--chip-border)" }}
           >
             {(["ALL", "72H"] as Range[]).map((r) => (
-              <button
+              <AppButton
                 key={r}
-                className={`px-2 py-1 chip-btn`}
-                style={
-                  range === r
-                    ? {
-                        background: "var(--btn-active-bg)",
-                        color: "var(--btn-active-fg)",
-                      }
-                    : { color: "var(--btn-inactive-fg)" }
-                }
+                variant={range === r ? "default" : "ghost"}
+                size="sm"
                 onClick={() => setRange(r)}
               >
                 {r}
-              </button>
+              </AppButton>
             ))}
           </div>
           <div
@@ -449,21 +443,14 @@ export default function AccountValueChart() {
             style={{ borderColor: "var(--chip-border)" }}
           >
             {(["$", "%"] as Mode[]).map((m) => (
-              <button
+              <AppButton
                 key={m}
-                className={`px-2 py-1 chip-btn`}
-                style={
-                  mode === m
-                    ? {
-                        background: "var(--btn-active-bg)",
-                        color: "var(--btn-active-fg)",
-                      }
-                    : { color: "var(--btn-inactive-fg)" }
-                }
+                variant={mode === m ? "default" : "ghost"}
+                size="sm"
                 onClick={() => setMode(m)}
               >
                 {m}
-              </button>
+              </AppButton>
             ))}
           </div>
         </div>
@@ -616,18 +603,11 @@ export default function AccountValueChart() {
                       const activeOn = active.size ? active.has(id) : true;
                       const icon = getModelIcon(id);
                       return (
-                        <button
+                        <AppButton
                           key={id}
-                          className={`inline-flex min-w-[120px] flex-shrink-0 flex-col items-center justify-center gap-1 rounded border px-2.5 py-2 text-[12px] chip-btn`}
-                          style={{
-                            borderColor: "var(--chip-border)",
-                            background: activeOn
-                              ? "var(--btn-active-bg)"
-                              : "transparent",
-                            color: activeOn
-                              ? "var(--btn-active-fg)"
-                              : "var(--btn-inactive-fg)",
-                          }}
+                          variant={activeOn ? "default" : "outline"}
+                          size="sm"
+                          className="inline-flex min-w-[120px] flex-shrink-0 flex-col items-center justify-center gap-1 text-[12px]"
                           onClick={() => {
                             setActive((prev) => {
                               if (prev.size === 1 && prev.has(id))
@@ -675,7 +655,7 @@ export default function AccountValueChart() {
                           >
                             {formatValue(lastValById[id])}
                           </div>
-                        </button>
+                        </AppButton>
                       );
                     })}
                   </div>
@@ -693,18 +673,11 @@ export default function AccountValueChart() {
                       const activeOn = active.size ? active.has(id) : true;
                       const icon = getModelIcon(id);
                       return (
-                        <button
+                        <AppButton
                           key={id}
-                          className={`w-full group inline-flex flex-col items-center justify-center gap-1 rounded border px-2.5 py-2 text-[12px] sm:text-[13px] chip-btn`}
-                          style={{
-                            borderColor: "var(--chip-border)",
-                            background: activeOn
-                              ? "var(--btn-active-bg)"
-                              : "transparent",
-                            color: activeOn
-                              ? "var(--btn-active-fg)"
-                              : "var(--btn-inactive-fg)",
-                          }}
+                          variant={activeOn ? "default" : "outline"}
+                          size="sm"
+                          className="w-full group inline-flex flex-col items-center justify-center gap-1 text-[12px] sm:text-[13px]"
                           onClick={() => {
                             setActive((prev) => {
                               if (prev.size === 1 && prev.has(id))
@@ -752,7 +725,7 @@ export default function AccountValueChart() {
                           >
                             {formatValue(lastValById[id])}
                           </div>
-                        </button>
+                        </AppButton>
                       );
                     })}
                   </div>

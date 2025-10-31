@@ -12,6 +12,7 @@ import { useSearchParams } from "next/navigation";
 import { getModelColor, getModelName } from "@/lib/model/meta";
 import { ModelLogoChip } from "@/components/shared/ModelLogo";
 import CoinIcon from "@/components/shared/CoinIcon";
+import { AppButton } from "@/components/ui";
 
 type SortKey =
   | "symbol"
@@ -336,17 +337,15 @@ function ExitPlanPeek({ plan }: { plan?: any }) {
 
   return (
     <>
-      <button
+      <AppButton
         ref={btnRef}
-        className="ui-sans rounded border px-2 py-0.5 text-[11px]"
-        style={{
-          borderColor: "var(--panel-border)",
-          color: "var(--foreground)",
-        }}
+        variant="outline"
+        size="sm"
+        className="text-[11px]"
         onClick={() => setOpen((v) => !v)}
       >
         View
-      </button>
+      </AppButton>
       {open &&
         pos &&
         typeof document !== "undefined" &&

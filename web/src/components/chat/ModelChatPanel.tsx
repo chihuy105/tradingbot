@@ -7,6 +7,7 @@ import { ModelLogoChip } from "@/components/shared/ModelLogo";
 // theme handled via CSS variables
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { AppButton } from "@/components/ui";
 
 export default function ModelChatPanel() {
   const { items, isLoading, isError } = useConversations();
@@ -207,13 +208,14 @@ function ChatCard({
           >
             {content || "(no summary)"}
           </div>
-          <button
-            className={`absolute bottom-1 right-2 text-[11px] italic`}
-            style={{ color: "var(--muted-text)" }}
+          <AppButton
+            variant="ghost"
+            size="sm"
+            className="absolute bottom-1 right-2 text-[11px] italic"
             onClick={() => setOpen(!open)}
           >
             {open ? "Collapse" : "Expand"}
-          </button>
+          </AppButton>
           {/* translation toggle removed */}
         </div>
       </div>
@@ -264,15 +266,16 @@ function ChatCard({
                     style={{ color: "var(--muted-text)" }}
                   >
                     <span>{fmtTime(h.timestamp)}</span>
-                    <button
-                      className={`text-[11px] italic`}
-                      style={{ color: "var(--muted-text)" }}
+                    <AppButton
+                      variant="ghost"
+                      size="sm"
+                      className="text-[11px] italic"
                       onClick={() =>
                         setOpenHist({ ...openHist, [key]: !isOpen })
                       }
                     >
                       {isOpen ? "Collapse" : "Expand"}
-                    </button>
+                    </AppButton>
                   </div>
                   {isOpen && (
                     <div className="space-y-2">

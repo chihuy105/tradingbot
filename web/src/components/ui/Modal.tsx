@@ -1,5 +1,6 @@
 "use client";
 import { ReactNode, useEffect } from "react";
+import AppButton from "./AppButton";
 
 export default function Modal({
   open,
@@ -42,13 +43,13 @@ export default function Modal({
           >
             {title ?? "Details"}
           </h3>
-          <button
-            className="rounded px-2 py-1 text-xs chip-btn"
-            style={{ color: "var(--muted-text)" }}
+          <AppButton
+            variant="ghost"
+            size="sm"
             onClick={onClose}
           >
             Close
-          </button>
+          </AppButton>
         </div>
         <div className="text-sm" style={{ color: "var(--foreground)" }}>
           {children}

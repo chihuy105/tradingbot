@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useAnalyticsMap } from "@/lib/api/hooks/useAnalyticsMap";
 import { fmtUSD } from "@/lib/utils/formatters";
+import { AppButton } from "@/components/ui";
 
 export default function ModelAnalyticsDetails({
   modelId,
@@ -36,16 +37,13 @@ export default function ModelAnalyticsDetails({
         >
           Analytics details
         </div>
-        <button
-          className="ui-sans rounded border px-2 py-1 text-xs chip-btn"
-          style={{
-            borderColor: "var(--chip-border)",
-            color: "var(--foreground)",
-          }}
+        <AppButton
+          variant="outline"
+          size="sm"
           onClick={() => setOpen((v) => !v)}
         >
           {open ? "Collapse" : "Expand"}
-        </button>
+        </AppButton>
       </div>
       {open && (
         <div className="px-3 pb-3">

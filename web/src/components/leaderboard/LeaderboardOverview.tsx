@@ -10,6 +10,7 @@ import { ModelLogoChip } from "@/components/shared/ModelLogo";
 import CoinIcon from "@/components/shared/CoinIcon";
 import { fmtUSD } from "@/lib/utils/formatters";
 import { useLatestEquityMap } from "@/lib/api/hooks/useModelSnapshots";
+import { AppButton } from "@/components/ui";
 
 export default function LeaderboardOverview({
   mode: _mode,
@@ -65,15 +66,20 @@ export default function LeaderboardOverview({
     <div className="space-y-3">
       {/* Controls aligned to the left, above the table */}
       <div className="flex items-center gap-2">
-        <TabButton active={tab === "overall"} onClick={() => setTab("overall")}>
+        <AppButton
+          variant={tab === "overall" ? "secondary" : "outline"}
+          size="sm"
+          onClick={() => setTab("overall")}
+        >
           Overall stats
-        </TabButton>
-        <TabButton
-          active={tab === "advanced"}
+        </AppButton>
+        <AppButton
+          variant={tab === "advanced" ? "secondary" : "outline"}
+          size="sm"
           onClick={() => setTab("advanced")}
         >
           Advanced analytics
-        </TabButton>
+        </AppButton>
       </div>
       {/* Leaderboard table */}
       <LeaderboardTable mode={tab} />
@@ -91,29 +97,6 @@ export default function LeaderboardOverview({
   );
 }
 
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active?: boolean;
-  onClick?: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="ui-sans rounded-md border px-3 py-1 text-xs"
-      style={{
-        background: active ? "var(--panel-bg)" : "transparent",
-        borderColor: "var(--panel-border)",
-        color: active ? "var(--foreground)" : "var(--muted-text)",
-      }}
-    >
-      {children}
-    </button>
-  );
-}
 
 function WinnerCard({ id, equity }: { id?: string; equity?: number }) {
   return (
