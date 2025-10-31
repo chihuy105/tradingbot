@@ -1,61 +1,53 @@
-"use client";
-import { ButtonHTMLAttributes, forwardRef } from "react";
-import clsx from "clsx";
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
 
-export interface AppButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
-  size?: "default" | "sm" | "lg" | "icon";
+import { cn } from "@/lib/utils";
+
+const buttonVariants = cva(
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        destructive:
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        outline:
+          "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+        secondary:
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        ghost: "hover:bg-accent hover:text-accent-foreground",
+        link: "text-primary underline-offset-4 hover:underline",
+      },
+      size: {
+        default: "h-10 px-4 py-2",
+        sm: "h-9 rounded-md px-3",
+        lg: "h-11 rounded-md px-8",
+        icon: "h-10 w-10",
+        "icon-sm": "h-8 w-8",
+        "icon-lg": "h-12 w-12",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+);
+
+export interface AppButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
   isLoading?: boolean;
   asChild?: boolean;
 }
 
-const AppButton = forwardRef<HTMLButtonElement, AppButtonProps>(
-  (
-    {
-      className,
-      variant = "default",
-      size = "default",
-      isLoading = false,
-      disabled,
-      children,
-      ...props
-    },
-    ref
-  ) => {
+const AppButton = React.forwardRef<HTMLButtonElement, AppButtonProps>(
+  ({ className, variant, size, isLoading = false, disabled, children, ...props }, ref) => {
     const isDisabled = disabled || isLoading;
 
     return (
       <button
-        className={clsx(
-          "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium",
-          "ring-offset-background transition-colors",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:ring-offset-2",
-          "disabled:pointer-events-none disabled:opacity-50",
-          "cursor-pointer",
-          {
-            // Variant styles
-            "bg-[var(--btn-active-bg)] text-[var(--btn-active-fg)] border border-[var(--panel-border)] hover:brightness-90 active:brightness-75":
-              variant === "default",
-            "bg-red-500 text-white border border-red-600 hover:bg-red-600 active:bg-red-700":
-              variant === "destructive",
-            "border border-[var(--panel-border)] bg-transparent text-[var(--foreground)] hover:bg-[var(--panel-border)]/10 active:bg-[var(--panel-border)]/20":
-              variant === "outline",
-            "bg-[var(--panel-bg)] text-[var(--foreground)] border border-[var(--panel-border)] hover:brightness-95 active:brightness-90":
-              variant === "secondary",
-            "border-none hover:bg-[var(--foreground)]/5 active:bg-[var(--foreground)]/10":
-              variant === "ghost",
-            "text-[var(--brand-accent)] underline-offset-4 hover:underline border-none":
-              variant === "link",
-          },
-          {
-            // Size styles
-            "h-10 px-4 py-2": size === "default",
-            "h-9 rounded-md px-3 text-xs": size === "sm",
-            "h-11 rounded-md px-8": size === "lg",
-            "h-10 w-10 p-0": size === "icon",
-          },
-          className
-        )}
+        className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         disabled={isDisabled}
         {...props}
@@ -75,6 +67,7 @@ const AppButton = forwardRef<HTMLButtonElement, AppButtonProps>(
 
 AppButton.displayName = "AppButton";
 
+export { AppButton, buttonVariants };
 export default AppButton;
 
 function LoadingSpinner() {
