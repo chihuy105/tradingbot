@@ -1,7 +1,6 @@
 "use client";
 import { useMemo } from "react";
 import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
-import { useState } from "react";
 import { useLeaderboard } from "@/lib/api/hooks/useLeaderboard";
 import { useAccountTotals } from "@/lib/api/hooks/useAccountTotals";
 import { usePositions } from "@/lib/api/hooks/usePositions";
@@ -10,13 +9,13 @@ import { ModelLogoChip } from "@/components/shared/ModelLogo";
 import CoinIcon from "@/components/shared/CoinIcon";
 import { fmtUSD } from "@/lib/utils/formatters";
 import { useLatestEquityMap } from "@/lib/api/hooks/useModelSnapshots";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 export default function LeaderboardOverview({
   mode: _mode,
 }: {
   mode?: "overall" | "advanced";
 }) {
-  const [tab, setTab] = useState<"overall" | "advanced">(_mode || "overall");
   const { rows } = useLeaderboard();
   const { map: equityMap } = useLatestEquityMap();
   const rowsWithEq = rows.map((r) => ({
@@ -62,56 +61,36 @@ export default function LeaderboardOverview({
   }, [positionsByModel]);
 
   return (
-    <div className="space-y-3">
-      {/* Controls aligned to the left, above the table */}
-      <div className="flex items-center gap-2">
-        <TabButton active={tab === "overall"} onClick={() => setTab("overall")}>
+    <Tabs defaultValue={_mode || "overall"} className="space-y-3">
+      <TabsList>
+        <TabsTrigger value="overall">
           Overall stats
-        </TabButton>
-        <TabButton
-          active={tab === "advanced"}
-          onClick={() => setTab("advanced")}
-        >
+        </TabsTrigger>
+        <TabsTrigger value="advanced">
           Advanced analytics
-        </TabButton>
-      </div>
-      {/* Leaderboard table */}
-      <LeaderboardTable mode={tab} />
+        </TabsTrigger>
+      </TabsList>
 
-      {/* Summary deck */}
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <WinnerCard id={top?.id} equity={top?.equity} />
-        <SummaryCard title="Total equity" value={fmtUSD(totalEquity || 0)} />
-        <ActivePositions symbols={activeSymbols} />
-      </div>
+      <TabsContent value="overall" className="space-y-3">
+        <LeaderboardTable mode="overall" />
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <WinnerCard id={top?.id} equity={top?.equity} />
+          <SummaryCard title="Total equity" value={fmtUSD(totalEquity || 0)} />
+          <ActivePositions symbols={activeSymbols} />
+        </div>
+        {!!rows?.length && <Bars rows={rowsWithEq} />}
+      </TabsContent>
 
-      {/* Bar chart: equity per model */}
-      {!!rows?.length && <Bars rows={rowsWithEq} />}
-    </div>
-  );
-}
-
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active?: boolean;
-  onClick?: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className="ui-sans rounded-md border px-3 py-1 text-xs"
-      style={{
-        background: active ? "var(--panel-bg)" : "transparent",
-        borderColor: "var(--panel-border)",
-        color: active ? "var(--foreground)" : "var(--muted-text)",
-      }}
-    >
-      {children}
-    </button>
+      <TabsContent value="advanced" className="space-y-3">
+        <LeaderboardTable mode="advanced" />
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <WinnerCard id={top?.id} equity={top?.equity} />
+          <SummaryCard title="Total equity" value={fmtUSD(totalEquity || 0)} />
+          <ActivePositions symbols={activeSymbols} />
+        </div>
+        {!!rows?.length && <Bars rows={rowsWithEq} />}
+      </TabsContent>
+    </Tabs>
   );
 }
 

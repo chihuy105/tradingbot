@@ -1,7 +1,7 @@
 import PriceTicker from "@/components/layout/PriceTicker";
 import AccountValueChart from "@/components/chart/AccountValueChart";
-import { PositionsPanel } from "@/components/tabs/PositionsPanel";
 import { Suspense } from "react";
+import RightTabsContainer from "@/components/tabs/RightTabsContainer";
 
 export default function Home() {
   return (
@@ -17,28 +17,10 @@ export default function Home() {
               <div className="mb-2 text-xs text-zinc-500">Loading tabs…</div>
             }
           >
-            <div className="mb-2 flex items-center gap-3 text-xs">
-              <TabButton name="Positions" tabKey="positions" />
-              <TabButton name="Model Chat" tabKey="chat" />
-              <TabButton name="Executions" tabKey="trades" />
-              <TabButton name="Analytics" disabled />
-              <TabButton name="README.md" tabKey="readme" />
-            </div>
+            <RightTabsContainer />
           </Suspense>
-          <div className="h-[calc(100%-1.5rem)] overflow-y-auto pr-1">
-            <Suspense
-              fallback={<div className="text-xs text-zinc-500">Loading data…</div>}
-            >
-              <RightTabs />
-            </Suspense>
-          </div>
         </div>
       </section>
     </main>
   );
 }
-
-// Client subcomponents in separate file to keep server component clean
-import RightTabs from "@/components/tabs/RightTabs";
-import TabButton from "@/components/tabs/TabButton";
-// RightTabs and TabButton are client components
