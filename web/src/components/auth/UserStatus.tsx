@@ -29,7 +29,7 @@ export default function UserStatus() {
   if (!user) {
     return (
       <div className="flex items-center gap-2">
-        <AppButton asChild variant="outline" size="sm">
+        <AppButton asChild={true} variant="outline" size="sm">
           <Link href={loginUrl}>
             {loading ? "…" : "Log in"}
           </Link>
