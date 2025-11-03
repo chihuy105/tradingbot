@@ -9,7 +9,7 @@ import {AppButton} from "@/components/ui";
 export default function UserStatus() {
   const pathname = usePathname();
   const auth = useAuthDispatch();
-  const { user, token, status, error } = useAppSelector((state) => state.auth);
+  const { user, status, error } = useAppSelector((state) => state.auth);
 
   const loading = useMemo(() => status === "loading", [status]);
 
@@ -24,12 +24,6 @@ export default function UserStatus() {
       .catch(() => {
         auth.dispatch(auth.logout());
       });
-  };
-
-  const handleRefreshUser = () => {
-    if (token) {
-      void auth.dispatch(auth.fetchCurrentUser());
-    }
   };
 
   if (!user) {
