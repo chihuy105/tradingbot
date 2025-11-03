@@ -1,7 +1,9 @@
 package hyperliquid
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/big"
@@ -36,10 +38,41 @@ type frontendOpenOrder struct {
 
 func buildPlaceOrderAction(orders []exchange.Order) (Action, error) {
 	payloads := make([]orderPayload, len(orders))
+	grouping := "na"
+	explicitGrouping := false
+	var builder *builderPayload
 	for i, order := range orders {
 		if err := validateOrder(order); err != nil {
 			return Action{}, fmt.Errorf("order[%d]: %w", i, err)
 		}
+
+		if g := strings.TrimSpace(order.Grouping); g != "" {
+			if !explicitGrouping {
+				grouping = g
+				explicitGrouping = true
+			} else if grouping != g {
+				return Action{}, fmt.Errorf("order[%d]: grouping %q mismatches previous grouping %q", i, g, grouping)
+			}
+		}
+
+		if order.Builder != nil {
+			if strings.TrimSpace(order.Builder.Name) == "" {
+				return Action{}, fmt.Errorf("order[%d]: builder name required when builder is set", i)
+			}
+			if order.Builder.FeeBps < 0 {
+				return Action{}, fmt.Errorf("order[%d]: builder fee must be non-negative", i)
+			}
+			candidate := &builderPayload{
+				Builder: order.Builder.Name,
+				Fee:     order.Builder.FeeBps,
+			}
+			if builder == nil {
+				builder = candidate
+			} else if builder.Builder != candidate.Builder || builder.Fee != candidate.Fee {
+				return Action{}, fmt.Errorf("order[%d]: builder configuration must match previous orders", i)
+			}
+		}
+
 		payload, err := convertOrder(order)
 		if err != nil {
 			return Action{}, fmt.Errorf("order[%d]: %w", i, err)
@@ -48,7 +81,8 @@ func buildPlaceOrderAction(orders []exchange.Order) (Action, error) {
 	}
 	return Action{
 		Type:     ActionTypeOrder,
-		Grouping: "na",
+		Grouping: grouping,
+		Builder:  builder,
 		Orders:   payloads,
 	}, nil
 }
@@ -64,27 +98,72 @@ func buildCancelAction(cancels []Cancel) Action {
 	}
 }
 
+func buildCancelByCloidAction(cancels []CancelByCloid) (cancelByCloidAction, error) {
+	if len(cancels) == 0 {
+		return cancelByCloidAction{}, fmt.Errorf("hyperliquid: at least one cancel-by-cloid entry required")
+	}
+	payloads := make([]cancelByCloidPayload, len(cancels))
+	for i, cancel := range cancels {
+		if cancel.Asset < 0 {
+			return cancelByCloidAction{}, fmt.Errorf("hyperliquid: cancel[%d]: asset must be non-negative", i)
+		}
+		cloid := strings.TrimSpace(cancel.Cloid)
+		if cloid == "" {
+			return cancelByCloidAction{}, fmt.Errorf("hyperliquid: cancel[%d]: cloid is required", i)
+		}
+		if len(cloid) > 128 {
+			return cancelByCloidAction{}, fmt.Errorf("hyperliquid: cancel[%d]: cloid exceeds 128 characters", i)
+		}
+		payloads[i] = cancelByCloidPayload{Asset: cancel.Asset, Cloid: cloid}
+	}
+	return cancelByCloidAction{
+		Type:    ActionTypeCancelByCloid,
+		Cancels: payloads,
+	}, nil
+}
+
 // GetOpenOrders returns currently resting orders.
 func (c *Client) GetOpenOrders(ctx context.Context) ([]exchange.OrderStatus, error) {
-	if c.address == "" {
+	infoAddr := c.getInfoAddress()
+	if infoAddr == "" {
 		return nil, fmt.Errorf("hyperliquid: client address unavailable")
 	}
-	var resp struct {
-		Status string              `json:"status"`
-		Data   []frontendOpenOrder `json:"data"`
-	}
+
+	// Use json.RawMessage to capture raw response first
+	var raw json.RawMessage
 	if err := c.doInfoRequest(ctx, InfoRequest{
 		Type: "frontendOpenOrders",
-		User: c.address,
-	}, &resp); err != nil {
+		User: infoAddr,
+	}, &raw); err != nil {
 		return nil, err
 	}
-	if strings.ToLower(resp.Status) != "ok" {
-		return nil, fmt.Errorf("hyperliquid: frontendOpenOrders status %q", resp.Status)
+
+	// Try to determine if response is an array or an object
+	var orders []frontendOpenOrder
+	trimmed := bytes.TrimSpace(raw)
+
+	if len(trimmed) > 0 && trimmed[0] == '[' {
+		// Response is a direct array
+		if err := json.Unmarshal(raw, &orders); err != nil {
+			return nil, fmt.Errorf("hyperliquid: decode open orders array: %w", err)
+		}
+	} else {
+		// Response is an object with status and data fields
+		var resp struct {
+			Status string              `json:"status"`
+			Data   []frontendOpenOrder `json:"data"`
+		}
+		if err := json.Unmarshal(raw, &resp); err != nil {
+			return nil, fmt.Errorf("hyperliquid: decode open orders object: %w", err)
+		}
+		if strings.ToLower(resp.Status) != "ok" {
+			return nil, fmt.Errorf("hyperliquid: frontendOpenOrders status %q", resp.Status)
+		}
+		orders = resp.Data
 	}
 
-	results := make([]exchange.OrderStatus, 0, len(resp.Data))
-	for _, raw := range resp.Data {
+	results := make([]exchange.OrderStatus, 0, len(orders))
+	for _, raw := range orders {
 		status := exchange.OrderStatus{
 			Order: exchange.OrderInfo{
 				Coin:      raw.Coin,
@@ -109,17 +188,20 @@ func validateOrder(order exchange.Order) error {
 	if order.Asset < 0 {
 		return errInvalidAsset
 	}
-	if strings.TrimSpace(order.LimitPx) == "" {
-		return errInvalidPrice
-	}
-	if strings.TrimSpace(order.Sz) == "" {
+	if strings.TrimSpace(order.Sz) == "" || !isPositiveDecimal(order.Sz) {
 		return errInvalidSize
 	}
-	if !isPositiveDecimal(order.LimitPx) {
-		return errInvalidPrice
-	}
-	if !isPositiveDecimal(order.Sz) {
-		return errInvalidSize
+	// Accept trigger-only orders without a limit price
+	if order.OrderType.Trigger != nil || strings.TrimSpace(order.TriggerPx) != "" {
+		// For trigger orders, require a valid trigger price
+		if !isPositiveDecimal(order.TriggerPx) {
+			return fmt.Errorf("hyperliquid: trigger price must be positive")
+		}
+	} else {
+		// Otherwise require a valid limit price
+		if strings.TrimSpace(order.LimitPx) == "" || !isPositiveDecimal(order.LimitPx) {
+			return errInvalidPrice
+		}
 	}
 	if len(order.Cloid) > 128 {
 		return fmt.Errorf("hyperliquid: cloid longer than 128 characters")
@@ -148,22 +230,47 @@ func isZeroDecimal(value string) bool {
 }
 
 func convertOrder(order exchange.Order) (orderPayload, error) {
-	if order.OrderType.Limit == nil {
-		return orderPayload{}, fmt.Errorf("hyperliquid: only limit order type supported at the moment")
-	}
-	return orderPayload{
+	// Build base payload
+	payload := orderPayload{
 		Asset:      order.Asset,
 		IsBuy:      order.IsBuy,
 		LimitPx:    order.LimitPx,
 		Sz:         order.Sz,
 		ReduceOnly: order.ReduceOnly,
-		OrderType: orderTypePayload{
-			Limit: &limitOrderPayload{TIF: order.OrderType.Limit.TIF},
-		},
 		Cloid:      order.Cloid,
-		TriggerPx:  order.TriggerPx,
-		TriggerRel: order.TriggerRel,
-	}, nil
+	}
+
+	// Prefer explicit trigger order if provided
+	if order.OrderType.Trigger != nil || (strings.TrimSpace(order.TriggerPx) != "" && order.OrderType.Limit == nil) {
+		if strings.TrimSpace(order.TriggerPx) == "" {
+			return orderPayload{}, fmt.Errorf("hyperliquid: trigger order requires trigger price")
+		}
+		payload.OrderType = orderTypePayload{
+			Trigger: &triggerOrderPayload{
+				IsMarket:  order.OrderType.Trigger != nil && order.OrderType.Trigger.IsMarket,
+				TriggerPx: order.TriggerPx,
+				Tpsl: func() string {
+					if order.OrderType.Trigger != nil {
+						return order.OrderType.Trigger.Tpsl
+					}
+					return ""
+				}(),
+				TriggerRel: order.TriggerRel,
+			},
+		}
+		// HL expects triggerPx inside orderType.trigger. Do not set top-level fields.
+		return payload, nil
+	}
+
+	// Fallback to limit order
+	if order.OrderType.Limit == nil {
+		return orderPayload{}, fmt.Errorf("hyperliquid: order type not specified (limit or trigger)")
+	}
+	payload.OrderType = orderTypePayload{
+		Limit: &limitOrderPayload{TIF: order.OrderType.Limit.TIF},
+	}
+	// Do not set top-level TriggerPx/TriggerRel for limit orders as they are not documented in the API
+	return payload, nil
 }
 
 func aggressiveLimitPrice(isBuy bool) string {

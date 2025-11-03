@@ -1,6 +1,8 @@
 package hyperliquid
 
 import (
+	"bytes"
+	"context"
 	"encoding/binary"
 	"strconv"
 	"testing"
@@ -57,6 +59,54 @@ func TestBuildPlaceOrderAction(t *testing.T) {
 	require.Equal(t, order.Cloid, payload.Cloid)
 }
 
+func TestBuildPlaceOrderActionWithBuilder(t *testing.T) {
+	order := exchange.Order{
+		Asset:      3,
+		IsBuy:      true,
+		LimitPx:    "123.45",
+		Sz:         "0.25",
+		ReduceOnly: false,
+		OrderType: exchange.OrderType{
+			Limit: &exchange.LimitOrderType{TIF: "Gtc"},
+		},
+		Builder:  &exchange.BuilderInfo{Name: "builder-addr", FeeBps: 25},
+		Grouping: "bundle",
+	}
+	action, err := buildPlaceOrderAction([]exchange.Order{order})
+	require.NoError(t, err)
+	require.Equal(t, "bundle", action.Grouping)
+	require.NotNil(t, action.Builder)
+	require.Equal(t, "builder-addr", action.Builder.Builder)
+	require.Equal(t, 25, action.Builder.Fee)
+}
+
+func TestBuildPlaceOrderActionGroupingMismatch(t *testing.T) {
+	orders := []exchange.Order{
+		{
+			Asset:   1,
+			IsBuy:   true,
+			LimitPx: "1",
+			Sz:      "1",
+			OrderType: exchange.OrderType{
+				Limit: &exchange.LimitOrderType{TIF: "Gtc"},
+			},
+			Grouping: "g1",
+		},
+		{
+			Asset:   1,
+			IsBuy:   false,
+			LimitPx: "2",
+			Sz:      "1",
+			OrderType: exchange.OrderType{
+				Limit: &exchange.LimitOrderType{TIF: "Gtc"},
+			},
+			Grouping: "g2",
+		},
+	}
+	_, err := buildPlaceOrderAction(orders)
+	require.Error(t, err)
+}
+
 func TestBuildEIP712Message(t *testing.T) {
 	order := exchange.Order{
 		Asset:   1,
@@ -98,7 +148,7 @@ func TestSignActionDeterministic(t *testing.T) {
 	require.NoError(t, err)
 
 	nonce := int64(1700000005000)
-	req, err := signAction(action, signer, nonce, "", true)
+	req, err := signAction(action, signer, nonce, "", "", true)
 	require.NoError(t, err)
 	require.Equal(t, nonce, req.Nonce)
 	require.Equal(t, action, req.Action)
@@ -115,19 +165,24 @@ func TestSignActionDeterministic(t *testing.T) {
 
 func computeReferenceDigest(t *testing.T, action Action, nonce int64, vault string, isMainnet bool) []byte {
 	t.Helper()
-	msgpackBytes, err := msgpack.Marshal(action)
-	require.NoError(t, err)
-
-	vaultBytes := make([]byte, common.AddressLength)
-	if vault != "" {
-		require.True(t, common.IsHexAddress(vault))
-		copy(vaultBytes, common.HexToAddress(vault).Bytes())
-	}
+	var buf bytes.Buffer
+	enc := msgpack.NewEncoder(&buf)
+	enc.UseCompactInts(true)
+	require.NoError(t, enc.Encode(action))
+	msgpackBytes := convertStr16ToStr8(buf.Bytes())
 
 	var nonceBytes [8]byte
 	binary.BigEndian.PutUint64(nonceBytes[:], uint64(nonce))
 
-	payload := append(append(msgpackBytes, vaultBytes...), nonceBytes[:]...)
+	payload := append(msgpackBytes, nonceBytes[:]...)
+	if vault == "" {
+		payload = append(payload, 0x00)
+	} else {
+		require.True(t, common.IsHexAddress(vault))
+		payload = append(payload, 0x01)
+		payload = append(payload, common.HexToAddress(vault).Bytes()...)
+	}
+
 	connectionID := crypto.Keccak256(payload)
 
 	source := "a"
@@ -135,9 +190,6 @@ func computeReferenceDigest(t *testing.T, action Action, nonce int64, vault stri
 		source = "b"
 	}
 	chainID := int64(1337)
-	if !isMainnet {
-		chainID = 1338
-	}
 
 	typedData := apitypes.TypedData{
 		Types: apitypes.Types{
@@ -194,6 +246,42 @@ func TestValidateOrder(t *testing.T) {
 		Sz:      "0",
 	})
 	require.Error(t, err)
+}
+
+func TestConvertOrder_Trigger(t *testing.T) {
+	// Build a trigger order: market take-profit at 25000
+	ord := exchange.Order{
+		Asset:      1,
+		IsBuy:      false,
+		Sz:         "0.1",
+		TriggerPx:  "25000",
+		OrderType:  exchange.OrderType{Trigger: &exchange.TriggerOrderType{IsMarket: true, Tpsl: "tp"}},
+		ReduceOnly: true,
+	}
+	payload, err := convertOrder(ord)
+	require.NoError(t, err)
+	require.Nil(t, payload.OrderType.Limit)
+	require.NotNil(t, payload.OrderType.Trigger)
+	require.Equal(t, "25000", payload.OrderType.Trigger.TriggerPx)
+	require.Equal(t, "tp", payload.OrderType.Trigger.Tpsl)
+	require.True(t, payload.OrderType.Trigger.IsMarket)
+	// top-level trigger fields should be empty when nested under orderType.trigger
+	require.Equal(t, "", payload.TriggerPx)
+	require.Equal(t, "", payload.TriggerRel)
+}
+
+func TestValidateOrder_TriggerOnly(t *testing.T) {
+	ord := exchange.Order{
+		Asset:     1,
+		IsBuy:     true,
+		Sz:        "0.05",
+		TriggerPx: "123.45",
+		OrderType: exchange.OrderType{Trigger: &exchange.TriggerOrderType{IsMarket: true, Tpsl: "sl"}},
+	}
+	err := validateOrder(ord)
+	require.NoError(t, err)
+	_, err = buildPlaceOrderAction([]exchange.Order{ord})
+	require.NoError(t, err)
 }
 
 func TestIsZeroDecimal(t *testing.T) {
@@ -262,4 +350,86 @@ func TestBuildCloseOrder(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, ok)
 	require.Equal(t, defaultAggressiveBuyLimit, order.LimitPx)
+}
+
+func TestBuildCancelByCloidAction(t *testing.T) {
+	action, err := buildCancelByCloidAction([]CancelByCloid{{Asset: 5, Cloid: "abc"}})
+	require.NoError(t, err)
+	require.Equal(t, ActionTypeCancelByCloid, action.Type)
+	require.Len(t, action.Cancels, 1)
+	require.Equal(t, 5, action.Cancels[0].Asset)
+	require.Equal(t, "abc", action.Cancels[0].Cloid)
+}
+
+func TestBuildModifyAction(t *testing.T) {
+	oid := int64(42)
+	req := ModifyOrderRequest{
+		Oid: &oid,
+		Order: exchange.Order{
+			Asset:   1,
+			IsBuy:   true,
+			LimitPx: "100",
+			Sz:      "1",
+			OrderType: exchange.OrderType{
+				Limit: &exchange.LimitOrderType{TIF: "Gtc"},
+			},
+		},
+	}
+	action, err := buildModifyAction(req)
+	require.NoError(t, err)
+	require.Equal(t, ActionTypeModify, action.Type)
+	require.Equal(t, oid, action.Oid)
+	require.Equal(t, "100", action.Order.LimitPx)
+
+	req = ModifyOrderRequest{
+		Cloid: "cl-123",
+		Order: exchange.Order{
+			Asset:   1,
+			IsBuy:   false,
+			LimitPx: "90",
+			Sz:      "1",
+			OrderType: exchange.OrderType{
+				Limit: &exchange.LimitOrderType{TIF: "Gtc"},
+			},
+		},
+	}
+	action, err = buildModifyAction(req)
+	require.NoError(t, err)
+	require.Equal(t, "cl-123", action.Oid)
+}
+
+func TestFormatSizeAndIOCMarket(t *testing.T) {
+	// Build a client with fake signer; only utility methods exercised (no HTTP)
+	c, err := NewClient("0x4c0883a69102937d6231471b5dbb6204fe5129617082796fe3f6a4ab2ed5f8d2", true)
+	require.NoError(t, err)
+	// inject asset directory cache directly to avoid HTTP
+	c.assetMu.Lock()
+	c.assetIndex = map[string]int{"BTC": 0}
+	c.assetInfo = map[string]AssetInfo{"BTC": {
+		Name: "BTC", SzDecimals: 3, Index: 0, MidPx: "50000", MarkPx: "50010",
+	}}
+	c.assetMu.Unlock()
+
+	sz, err := c.FormatSize(context.Background(), "BTC", 0.12349)
+	require.NoError(t, err)
+	require.Equal(t, "0.123", sz)
+
+	// Verify RoundPriceToSigFigs
+	p := RoundPriceToSigFigs(50000*1.01, 5)
+	require.NotEmpty(t, p)
+}
+
+func TestClientOptionsDefaults(t *testing.T) {
+	// defaults
+	c, err := NewClient("0x4c0883a69102937d6231471b5dbb6204fe5129617082796fe3f6a4ab2ed5f8d2", true)
+	require.NoError(t, err)
+	require.Equal(t, 5, c.priceSigFigs)
+	require.Equal(t, 0.0, c.defaultSlippage)
+
+	// overrides
+	c2, err := NewClient("0x4c0883a69102937d6231471b5dbb6204fe5129617082796fe3f6a4ab2ed5f8d2", true,
+		WithPriceSigFigs(4), WithDefaultSlippage(0.02))
+	require.NoError(t, err)
+	require.Equal(t, 4, c2.priceSigFigs)
+	require.InDelta(t, 0.02, c2.defaultSlippage, 1e-12)
 }

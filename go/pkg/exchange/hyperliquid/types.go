@@ -15,10 +15,16 @@ const (
 	ActionTypeOrder ActionType = "order"
 	// ActionTypeCancel cancels specific orders by oid.
 	ActionTypeCancel ActionType = "cancel"
+	// ActionTypeCancelByCloid cancels orders identified by client order id.
+	ActionTypeCancelByCloid ActionType = "cancelByCloid"
 	// ActionTypeCancelAll cancels all resting orders for an asset.
 	ActionTypeCancelAll ActionType = "cancelAll"
 	// ActionTypeUpdateLeverage adjusts leverage settings.
 	ActionTypeUpdateLeverage ActionType = "updateLeverage"
+	// ActionTypeModify updates a single resting order.
+	ActionTypeModify ActionType = "modify"
+	// ActionTypeBatchModify updates multiple resting orders.
+	ActionTypeBatchModify ActionType = "batchModify"
 )
 
 // Action encodes the payload sent to the Hyperliquid exchange endpoint.
@@ -28,8 +34,9 @@ type Action struct {
 	Cancels   []cancelPayload   `json:"cancels,omitempty" msgpack:"cancels,omitempty"`
 	CancelAll *CancelAllPayload `json:"cancelAll,omitempty" msgpack:"cancelAll,omitempty"`
 	Grouping  string            `json:"grouping,omitempty" msgpack:"grouping,omitempty"`
-	Asset     int               `json:"asset,omitempty" msgpack:"asset,omitempty"`
-	IsCross   bool              `json:"isCross,omitempty" msgpack:"isCross,omitempty"`
+	Builder   *builderPayload   `json:"builder,omitempty" msgpack:"builder,omitempty"`
+	Asset     *int              `json:"asset,omitempty" msgpack:"asset,omitempty"`
+	IsCross   *bool             `json:"isCross,omitempty" msgpack:"isCross,omitempty"`
 	Leverage  int               `json:"leverage,omitempty" msgpack:"leverage,omitempty"`
 }
 
@@ -46,11 +53,24 @@ type orderPayload struct {
 }
 
 type orderTypePayload struct {
-	Limit *limitOrderPayload `json:"limit,omitempty" msgpack:"limit,omitempty"`
+	Limit   *limitOrderPayload   `json:"limit,omitempty" msgpack:"limit,omitempty"`
+	Trigger *triggerOrderPayload `json:"trigger,omitempty" msgpack:"trigger,omitempty"`
 }
 
 type limitOrderPayload struct {
 	TIF string `json:"tif" msgpack:"tif"`
+}
+
+type triggerOrderPayload struct {
+	IsMarket   bool   `json:"isMarket" msgpack:"isMarket"`
+	TriggerPx  string `json:"triggerPx" msgpack:"triggerPx"`
+	Tpsl       string `json:"tpsl,omitempty" msgpack:"tpsl,omitempty"`
+	TriggerRel string `json:"triggerRel,omitempty" msgpack:"triggerRel,omitempty"`
+}
+
+type builderPayload struct {
+	Builder string `json:"b" msgpack:"b"`
+	Fee     int    `json:"f" msgpack:"f"`
 }
 
 // Cancel identifies an order to cancel (public API input).
@@ -65,18 +85,51 @@ type cancelPayload struct {
 	Oid   int64 `json:"o" msgpack:"o"`
 }
 
+// CancelByCloid identifies an order to cancel by client order id.
+type CancelByCloid struct {
+	Asset int
+	Cloid string
+}
+
+type cancelByCloidPayload struct {
+	Asset int    `json:"asset" msgpack:"asset"`
+	Cloid string `json:"cloid" msgpack:"cloid"`
+}
+
+type cancelByCloidAction struct {
+	Type    ActionType             `json:"type" msgpack:"type"`
+	Cancels []cancelByCloidPayload `json:"cancels" msgpack:"cancels"`
+}
+
 // CancelAllPayload captures cancel-all arguments.
 type CancelAllPayload struct {
 	Asset int `json:"asset" msgpack:"asset"`
 }
 
+type modifyPayload struct {
+	Type  string       `json:"type,omitempty" msgpack:"type,omitempty"`
+	Oid   interface{}  `json:"oid" msgpack:"oid"`
+	Order orderPayload `json:"order" msgpack:"order"`
+}
+
+type modifyAction struct {
+	Type  ActionType   `json:"type" msgpack:"type"`
+	Oid   interface{}  `json:"oid" msgpack:"oid"`
+	Order orderPayload `json:"order" msgpack:"order"`
+}
+
+type batchModifyAction struct {
+	Type     ActionType      `json:"type" msgpack:"type"`
+	Modifies []modifyPayload `json:"modifies" msgpack:"modifies"`
+}
+
 // ExchangeRequest is the signed request envelope for exchange actions.
 type ExchangeRequest struct {
-	Action       Action    `json:"action"`
-	Nonce        int64     `json:"nonce"`
-	Signature    Signature `json:"signature"`
-	VaultAddress string    `json:"vaultAddress,omitempty"`
-	ExpiresAfter *int64    `json:"expiresAfter,omitempty"`
+	Action       interface{} `json:"action"`
+	Nonce        int64       `json:"nonce"`
+	Signature    Signature   `json:"signature"`
+	VaultAddress string      `json:"vaultAddress,omitempty"`
+	ExpiresAfter *int64      `json:"expiresAfter,omitempty"`
 }
 
 // Signature represents an ECDSA signature.
@@ -90,6 +143,8 @@ type Signature struct {
 type InfoRequest struct {
 	Type string `json:"type"`
 	User string `json:"user,omitempty"`
+	// For vaultDetails endpoint
+	VaultAddress string `json:"vaultAddress,omitempty"`
 }
 
 // AccountStateResponse wraps account state returned by Hyperliquid.
@@ -200,4 +255,48 @@ type EIP712Domain struct {
 	Version           string
 	ChainID           int
 	VerifyingContract string
+}
+
+// SubAccounts (info endpoint: type=subAccounts) response items.
+type SubAccount struct {
+	Name               string                `json:"name"`
+	SubAccountUser     string                `json:"subAccountUser"`
+	Master             string                `json:"master"`
+	ClearinghouseState exchange.AccountState `json:"clearinghouseState"`
+	SpotState          *SpotState            `json:"spotState,omitempty"`
+}
+
+type SpotState struct {
+	Balances []SpotBalance `json:"balances"`
+}
+
+type SpotBalance struct {
+	Coin     string `json:"coin"`
+	Token    int    `json:"token"`
+	Total    string `json:"total"`
+	Hold     string `json:"hold"`
+	EntryNtl string `json:"entryNtl"`
+}
+
+// VaultDetails (info endpoint: type=vaultDetails) response.
+type VaultDetails struct {
+	Name                  string          `json:"name"`
+	VaultAddress          string          `json:"vaultAddress"`
+	Leader                string          `json:"leader"`
+	Description           string          `json:"description"`
+	APR                   float64         `json:"apr"`
+	Followers             []VaultFollower `json:"followers"`
+	MaxDistributable      float64         `json:"maxDistributable"`
+	MaxWithdrawable       float64         `json:"maxWithdrawable"`
+	IsClosed              bool            `json:"isClosed"`
+	AllowDeposits         bool            `json:"allowDeposits"`
+	AlwaysCloseOnWithdraw bool            `json:"alwaysCloseOnWithdraw"`
+}
+
+type VaultFollower struct {
+	User          string `json:"user"`
+	VaultEquity   string `json:"vaultEquity"`
+	PnL           string `json:"pnl"`
+	AllTimePnL    string `json:"allTimePnl"`
+	DaysFollowing int    `json:"daysFollowing"`
 }

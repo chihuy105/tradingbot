@@ -1,4 +1,5 @@
 Name: nof0
+Env: test   # test | dev | prod (default: test)
 Host: 0.0.0.0
 Port: 8888
 DataPath: ../mcp/data
@@ -20,6 +21,21 @@ TTL:
   Short: 10     # seconds for fast-changing data (e.g., prices)
   Medium: 60    # seconds for lists (e.g., trades)
   Long: 300     # seconds for large aggregations
+
+LLM:
+  File: llm.yaml
+
+Executor:
+  File: executor.yaml
+
+Manager:
+  File: manager.yaml
+
+Exchange:
+  File: exchange.yaml
+
+Market:
+  File: market.yaml
 
 # CORS settings
 Cors:

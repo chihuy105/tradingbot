@@ -77,6 +77,113 @@ curl http://localhost:8888/api/leaderboard
 curl http://localhost:8888/api/trades
 ```
 
+---
+
+**配置指南（重要变更）**
+
+- 管理器 Manager 仅通过 Provider ID 引用外部依赖：
+  - 交易所凭证统一放在 `etc/exchange.yaml`
+  - 行情数据源统一放在 `etc/market.yaml`
+  - 每个 Trader 在 `etc/manager.yaml` 中使用 `exchange_provider` 与 `market_provider` 指向上述 Provider ID
+- 执行器 Executor 配置不再包含模型或 Prompt：
+  - 已移除 `model_alias`、`prompt_template` 字段
+  - 模板路径由 Trader 侧注入（`prompt_template` 位于 `etc/prompts/manager/*.tmpl`）
+
+最小可运行示例
+
+1) 设置必要环境变量（示例使用 Hyperliquid 与默认 LLM 网关）：
+
+```bash
+export ZENMUX_API_KEY=your_llm_api_key
+export HYPERLIQUID_PRIVATE_KEY=0000000000000000000000000000000000000000000000000000000000000001
+```
+
+2) 核对配置文件（仓库已提供样例，可按需调整）：
+
+- `etc/nof0.yaml`
+  - 指向各模块子配置：`LLM.File`、`Executor.File`、`Manager.File`、`Exchange.File`、`Market.File`
+
+- `etc/manager.yaml`（节选）
+
+```yaml
+traders:
+  - id: trader_aggressive_short
+    name: Aggressive Short
+    exchange_provider: hyperliquid_testnet   # 来自 etc/exchange.yaml 的 providers 键名
+    market_provider: hyperliquid          # 来自 etc/market.yaml 的 providers 键名
+    prompt_template: prompts/manager/aggressive_short.tmpl
+    decision_interval: 3m
+    allocation_pct: 40
+    auto_start: true
+    risk_params:
+      max_positions: 3
+      max_position_size_usd: 500
+      max_margin_usage_pct: 60
+      major_coin_leverage: 20
+      altcoin_leverage: 10
+      min_risk_reward_ratio: 3.0
+      min_confidence: 75
+      stop_loss_enabled: true
+      take_profit_enabled: true
+```
+
+- `etc/executor.yaml`（节选：仅执行参数，无模型/Prompt）
+
+```yaml
+major_coin_leverage: 20
+altcoin_leverage: 10
+min_confidence: 75
+min_risk_reward: 3.0
+max_positions: 4
+decision_interval: 3m
+decision_timeout: 60s
+max_concurrent_decisions: 1
+allowed_trader_ids: []
+signing_key: ""
+overrides: {}
+```
+
+- `etc/exchange.yaml`（节选：统一管理交易所凭证）
+
+```yaml
+default: hyperliquid_testnet
+providers:
+  hyperliquid_testnet:
+    type: hyperliquid
+    private_key: ${HYPERLIQUID_PRIVATE_KEY}
+    testnet: true
+    timeout: 30s
+```
+
+- `etc/market.yaml`（节选：统一管理行情数据源）
+
+```yaml
+default: hyperliquid
+providers:
+  hyperliquid:
+    type: hyperliquid
+    base_url: https://api.hyperliquid.xyz/info
+    timeout: 8s
+    http_timeout: 10s
+    max_retries: 3
+```
+
+3) 启动服务：
+
+```bash
+go build -o nof0-api ./nof0.go
+./nof0-api -f etc/nof0.yaml
+```
+
+常见问题
+
+- 报错 “manager trader <id> references unknown exchange provider …”
+  - 检查 `etc/manager.yaml` 的 `exchange_provider` 是否与 `etc/exchange.yaml` 的 `providers` 键名一致
+- 报错 “market provider … not defined/unknown”
+  - 同理检查 `market_provider` 与 `etc/market.yaml` 的 `providers` 键名
+- LLM 相关 401/鉴权错误
+  - 确认已设置 `ZENMUX_API_KEY`，可通过 `env | grep ZENMUX` 验证
+
 ### 方式二: 使用 Docker Compose (含数据库)
 
 ```bash
@@ -161,10 +268,13 @@ go run cmd/importer/main.go -dsn "postgres://nof0:nof0@localhost:5432/nof0?sslmo
 
 ```bash
 # 运行所有单元测试
-./scripts/run-tests.sh
+python scripts/run_tests.py unit
 
 # 运行集成测试
-./scripts/run-integration-tests.sh
+python scripts/run_tests.py integration
+
+# 运行所有测试（单元 + 集成）
+python scripts/run_tests.py all
 
 # 查看覆盖率
 go test -cover ./internal/data/
@@ -174,6 +284,15 @@ go test -cover ./internal/data/
 - 数据层覆盖率: 88%
 - 集成测试: 100% API端点
 - 详细文档: [TEST_README.md](TEST_README.md)
+
+### 系统环境与测试模型选择
+
+`etc/nof0.yaml` 新增 `Env` 字段（test|dev|prod，默认 test）。当 `Env=test` 时：
+- LLM 默认模型自动切换为低成本模型，避免测试期间产生高额费用。
+- 当前使用 `google/gemini-2.5-flash-lite`（性价比高，成本低）。
+- 可在 `etc/nof0.yaml` 中设置 `Env: prod` 以使用生产模型配置。
+
+**注意**: Zenmux 的自动路由功能（`zenmux/auto`）目前不稳定，待官方修复后将迁移到智能路由模式
 
 ---
 
@@ -196,8 +315,7 @@ go/
 ├── migrations/               # 数据库迁移脚本
 ├── test/                     # 集成测试套件
 └── scripts/                  # 自动化脚本
-    ├── run-tests.sh          # 单元测试
-    └── run-integration-tests.sh
+    └── run_tests.py          # 统一测试运行器 (unit/integration/all)
 ```
 
 ---

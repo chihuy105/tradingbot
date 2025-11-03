@@ -1,17 +1,43 @@
 package svc
 
 import (
+	"log"
+
 	_ "github.com/jackc/pgx/v5/stdlib" // register pgx driver
 	"github.com/zeromicro/go-zero/core/stores/sqlx"
 
 	"nof0-api/internal/config"
 	"nof0-api/internal/data"
 	"nof0-api/internal/model"
+	"nof0-api/pkg/confkit"
+	exchangepkg "nof0-api/pkg/exchange"
+	_ "nof0-api/pkg/exchange/hyperliquid"
+	_ "nof0-api/pkg/exchange/sim"
+	executorpkg "nof0-api/pkg/executor"
+	llmpkg "nof0-api/pkg/llm"
+	managerpkg "nof0-api/pkg/manager"
+	marketpkg "nof0-api/pkg/market"
+	_ "nof0-api/pkg/market/exchanges/hyperliquid"
 )
 
 type ServiceContext struct {
-	Config     config.Config
+	Config config.Config
+
 	DataLoader *data.DataLoader
+
+	LLMConfig              *llmpkg.Config
+	ExecutorConfig         *executorpkg.Config
+	ManagerConfig          *managerpkg.Config
+	ManagerPromptRenderers map[string]*managerpkg.PromptRenderer
+	ManagerPromptDigests   map[string]string
+	ExchangeConfig         *exchangepkg.Config
+	ExchangeProviders      map[string]exchangepkg.Provider
+	DefaultExchange        exchangepkg.Provider
+	MarketConfig           *marketpkg.Config
+	MarketProviders        map[string]marketpkg.Provider
+	DefaultMarket          marketpkg.Provider
+	ManagerTraderExchange  map[string]exchangepkg.Provider
+	ManagerTraderMarket    map[string]marketpkg.Provider
 
 	// Optional DB models (injected but unused by handlers/logic for now)
 	DBConn                      sqlx.SqlConn
@@ -28,11 +54,156 @@ type ServiceContext struct {
 	ConversationMessagesModel   model.ConversationMessagesModel
 }
 
-func NewServiceContext(c config.Config) *ServiceContext {
+func NewServiceContext(c config.Config, mainConfigPath string) *ServiceContext {
 	svc := &ServiceContext{
 		Config:     c,
 		DataLoader: data.NewDataLoader(c.DataPath),
 	}
+
+	baseDir := c.BaseDir()
+	if baseDir == "" && mainConfigPath != "" {
+		baseDir = confkit.BaseDir(mainConfigPath)
+	}
+
+	// Load LLM config if specified (hydrated by config.Load or fallback)
+	llmCfg := c.LLM.Value
+	if llmCfg == nil && c.LLM.File != "" {
+		if baseDir == "" {
+			log.Fatalf("failed to resolve base dir for llm config %s", c.LLM.File)
+		}
+		var err error
+		llmCfg, err = llmpkg.LoadConfig(confkit.ResolvePath(baseDir, c.LLM.File))
+		if err != nil {
+			log.Fatalf("failed to load llm config: %v", err)
+		}
+	}
+	if llmCfg != nil {
+		if c.IsTestEnv() {
+			llmCfg = llmCfg.Clone()
+			llmCfg.DefaultModel = "google/gemini-2.5-flash-lite"
+		}
+		svc.LLMConfig = llmCfg
+	}
+
+	// Load Executor config if specified
+	executorCfg := c.Executor.Value
+	if executorCfg == nil && c.Executor.File != "" {
+		if baseDir == "" {
+			log.Fatalf("failed to resolve base dir for executor config %s", c.Executor.File)
+		}
+		var err error
+		executorCfg, err = executorpkg.LoadConfig(confkit.ResolvePath(baseDir, c.Executor.File))
+		if err != nil {
+			log.Fatalf("failed to load executor config: %v", err)
+		}
+	}
+	if executorCfg != nil {
+		svc.ExecutorConfig = executorCfg
+	}
+
+	// Load Manager config if specified
+	managerCfg := c.Manager.Value
+	if managerCfg == nil && c.Manager.File != "" {
+		if baseDir == "" {
+			log.Fatalf("failed to resolve base dir for manager config %s", c.Manager.File)
+		}
+		var err error
+		managerCfg, err = managerpkg.LoadConfig(confkit.ResolvePath(baseDir, c.Manager.File))
+		if err != nil {
+			log.Fatalf("failed to load manager config: %v", err)
+		}
+	}
+	if managerCfg != nil {
+		renderers := make(map[string]*managerpkg.PromptRenderer, len(managerCfg.Traders))
+		digests := make(map[string]string, len(managerCfg.Traders))
+		for i := range managerCfg.Traders {
+			tr := &managerCfg.Traders[i]
+			renderer, err := managerpkg.NewPromptRenderer(tr.PromptTemplate)
+			if err != nil {
+				log.Fatalf("failed to init manager prompt renderer for trader %s: %v", tr.ID, err)
+			}
+			renderers[tr.ID] = renderer
+			digests[tr.ID] = renderer.Digest()
+		}
+		svc.ManagerConfig = managerCfg
+		svc.ManagerPromptRenderers = renderers
+		svc.ManagerPromptDigests = digests
+	}
+
+	// Load Exchange config if specified
+	exchangeCfg := c.Exchange.Value
+	if exchangeCfg == nil && c.Exchange.File != "" {
+		if baseDir == "" {
+			log.Fatalf("failed to resolve base dir for exchange config %s", c.Exchange.File)
+		}
+		var err error
+		exchangeCfg, err = exchangepkg.LoadConfig(confkit.ResolvePath(baseDir, c.Exchange.File))
+		if err != nil {
+			log.Fatalf("failed to load exchange config: %v", err)
+		}
+	}
+	if exchangeCfg != nil {
+		if c.IsTestEnv() {
+			for _, provider := range exchangeCfg.Providers {
+				provider.Testnet = true
+			}
+		}
+		providers, err := exchangeCfg.BuildProviders()
+		if err != nil {
+			log.Fatalf("failed to build exchange providers: %v", err)
+		}
+		svc.ExchangeConfig = exchangeCfg
+		svc.ExchangeProviders = providers
+		if exchangeCfg.Default != "" {
+			svc.DefaultExchange = providers[exchangeCfg.Default]
+		}
+	}
+
+	// Load Market config if specified
+	marketCfg := c.Market.Value
+	if marketCfg == nil && c.Market.File != "" {
+		if baseDir == "" {
+			log.Fatalf("failed to resolve base dir for market config %s", c.Market.File)
+		}
+		var err error
+		marketCfg, err = marketpkg.LoadConfig(confkit.ResolvePath(baseDir, c.Market.File))
+		if err != nil {
+			log.Fatalf("failed to load market config: %v", err)
+		}
+	}
+	if marketCfg != nil {
+		providers, err := marketCfg.BuildProviders()
+		if err != nil {
+			log.Fatalf("failed to build market providers: %v", err)
+		}
+		svc.MarketConfig = marketCfg
+		svc.MarketProviders = providers
+		if marketCfg.Default != "" {
+			svc.DefaultMarket = providers[marketCfg.Default]
+		}
+	}
+
+	// Validate cross-module references: manager trader -> exchange/market providers
+	if svc.ManagerConfig != nil {
+		svc.ManagerTraderExchange = make(map[string]exchangepkg.Provider, len(svc.ManagerConfig.Traders))
+		svc.ManagerTraderMarket = make(map[string]marketpkg.Provider, len(svc.ManagerConfig.Traders))
+		for i := range svc.ManagerConfig.Traders {
+			trader := &svc.ManagerConfig.Traders[i]
+			// Strict mapping: manager config requires explicit provider IDs
+			exProvider, ok := svc.ExchangeProviders[trader.ExchangeProvider]
+			if !ok {
+				log.Fatalf("manager trader %s references unknown exchange provider %s", trader.ID, trader.ExchangeProvider)
+			}
+			svc.ManagerTraderExchange[trader.ID] = exProvider
+
+			mktProvider, ok := svc.MarketProviders[trader.MarketProvider]
+			if !ok {
+				log.Fatalf("manager trader %s references unknown market provider %s", trader.ID, trader.MarketProvider)
+			}
+			svc.ManagerTraderMarket[trader.ID] = mktProvider
+		}
+	}
+
 	// Only inject DB models when DSN provided; business logic still uses DataLoader.
 	if c.Postgres.DSN != "" {
 		conn := sqlx.NewSqlConn("pgx", c.Postgres.DSN)

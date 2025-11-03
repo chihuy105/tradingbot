@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -33,7 +34,8 @@ type Client struct {
 	exchangeURL string
 	httpClient  *http.Client
 	signer      Signer
-	address     string
+	address     string // API wallet address (derived from signer)
+	mainAddress string // Main account address (for info requests when using API wallet)
 	isTestnet   bool
 	logger      *log.Logger
 	clock       func() time.Time
@@ -42,6 +44,14 @@ type Client struct {
 	assetMu    sync.RWMutex
 	assetIndex map[string]int
 	assetInfo  map[string]AssetInfo
+
+	// Trade defaults / formatting
+	defaultSlippage float64
+	priceSigFigs    int
+
+	// Asset directory cache
+	assetTTL     time.Duration
+	assetLastRef time.Time
 }
 
 // ClientOption customises the Hyperliquid client.
@@ -74,6 +84,19 @@ func WithVaultAddress(addr string) ClientOption {
 	}
 }
 
+// WithMainAddress configures the main account address for info requests.
+// This is used when the API wallet (agent wallet) is different from the main account.
+// Info requests must use the main account's public address, while exchange requests
+// are signed by the API wallet on behalf of the main account.
+func WithMainAddress(addr string) ClientOption {
+	return func(c *Client) {
+		if common.IsHexAddress(addr) {
+			// Hyperliquid expects lowercase addresses
+			c.mainAddress = strings.ToLower(common.HexToAddress(addr).Hex())
+		}
+	}
+}
+
 // WithClock overrides the time source (primarily for testing).
 func WithClock(clock func() time.Time) ClientOption {
 	return func(c *Client) {
@@ -81,6 +104,46 @@ func WithClock(clock func() time.Time) ClientOption {
 			c.clock = clock
 		}
 	}
+}
+
+// WithDefaultSlippage configures a default slippage fraction used by helpers
+// when caller does not specify one (e.g. 0.01 = 1%).
+func WithDefaultSlippage(slippage float64) ClientOption {
+	return func(c *Client) {
+		if slippage > 0 {
+			c.defaultSlippage = slippage
+		}
+	}
+}
+
+// WithPriceSigFigs sets the default number of price significant figures
+// used by helper methods when formatting prices.
+func WithPriceSigFigs(sigfigs int) ClientOption {
+	return func(c *Client) {
+		if sigfigs >= 1 {
+			c.priceSigFigs = sigfigs
+		}
+	}
+}
+
+// WithAssetCacheTTL sets a time-to-live for the asset directory cache.
+// When positive, the client refreshes asset metadata after TTL elapses.
+func WithAssetCacheTTL(ttl time.Duration) ClientOption {
+	return func(c *Client) {
+		if ttl > 0 {
+			c.assetTTL = ttl
+		}
+	}
+}
+
+// getInfoAddress returns the address to use for info requests.
+// If mainAddress is configured (API wallet scenario), it returns mainAddress.
+// Otherwise, it returns the signer's address.
+func (c *Client) getInfoAddress() string {
+	if c.mainAddress != "" {
+		return c.mainAddress
+	}
+	return c.address
 }
 
 // NewClient constructs a Hyperliquid trading client using the provided private key.
@@ -94,19 +157,21 @@ func NewClient(privateKeyHex string, isTestnet bool, opts ...ClientOption) (*Cli
 		return nil, fmt.Errorf("hyperliquid: create signer: %w", err)
 	}
 
+	address := signer.GetAddress()
 	client := &Client{
 		infoURL:     mainnetInfoURL,
 		exchangeURL: mainnetExchangeURL,
 		httpClient: &http.Client{
 			Timeout: defaultHTTPTimeout,
 		},
-		signer:     signer,
-		address:    signer.GetAddress(),
-		isTestnet:  isTestnet,
-		logger:     log.Default(),
-		clock:      time.Now,
-		assetIndex: make(map[string]int),
-		assetInfo:  make(map[string]AssetInfo),
+		signer:       signer,
+		address:      address,
+		isTestnet:    isTestnet,
+		logger:       log.Default(),
+		clock:        time.Now,
+		assetIndex:   make(map[string]int),
+		assetInfo:    make(map[string]AssetInfo),
+		priceSigFigs: 5,
 	}
 	if isTestnet {
 		client.infoURL = testnetInfoURL
@@ -165,11 +230,87 @@ func (c *Client) CancelOrders(ctx context.Context, cancels []Cancel) error {
 
 // CancelAllOrders cancels all resting orders for the specified asset.
 func (c *Client) CancelAllOrders(ctx context.Context, asset int) error {
-	action := Action{
-		Type:      ActionTypeCancelAll,
-		CancelAll: &CancelAllPayload{Asset: asset},
+	// Get all open orders
+	orders, err := c.GetOpenOrders(ctx)
+	if err != nil {
+		return fmt.Errorf("hyperliquid: failed to get open orders: %w", err)
+	}
+
+	// Filter orders for the specified asset and build cancel list
+	var cancels []Cancel
+	for _, order := range orders {
+		// Get the asset index for this order's coin
+		orderAsset, err := c.GetAssetIndex(ctx, order.Order.Coin)
+		if err != nil {
+			// Skip orders we can't identify
+			continue
+		}
+		// Only cancel orders matching the target asset
+		if orderAsset == asset {
+			cancels = append(cancels, Cancel{
+				Asset: asset,
+				Oid:   order.Order.Oid,
+			})
+		}
+	}
+
+	// If no orders to cancel, return success
+	if len(cancels) == 0 {
+		return nil
+	}
+
+	// Cancel the filtered orders using the standard cancel action
+	return c.CancelOrders(ctx, cancels)
+}
+
+// CancelByCloid cancels a single order identified by client order id.
+func (c *Client) CancelByCloid(ctx context.Context, asset int, cloid string) error {
+	action, err := buildCancelByCloidAction([]CancelByCloid{{Asset: asset, Cloid: cloid}})
+	if err != nil {
+		return err
 	}
 	return c.doExchangeRequest(ctx, action, nil)
+}
+
+// CancelOrdersByCloid cancels multiple orders identified by their client order ids.
+func (c *Client) CancelOrdersByCloid(ctx context.Context, cancels []CancelByCloid) error {
+	if len(cancels) == 0 {
+		return nil
+	}
+	action, err := buildCancelByCloidAction(cancels)
+	if err != nil {
+		return err
+	}
+	return c.doExchangeRequest(ctx, action, nil)
+}
+
+// ModifyOrder updates a single resting order.
+func (c *Client) ModifyOrder(ctx context.Context, req ModifyOrderRequest) (*exchange.OrderResponse, error) {
+	action, err := buildModifyAction(req)
+	if err != nil {
+		return nil, err
+	}
+	var resp exchange.OrderResponse
+	if err := c.doExchangeRequest(ctx, action, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// ModifyOrders updates multiple resting orders atomically.
+func (c *Client) ModifyOrders(ctx context.Context, requests []ModifyOrderRequest) (*exchange.OrderResponse, error) {
+	if len(requests) == 0 {
+		return nil, fmt.Errorf("hyperliquid: at least one modify request required")
+	}
+	action, err := buildBatchModifyAction(requests)
+	if err != nil {
+		return nil, err
+	}
+	var resp exchange.OrderResponse
+	if err := c.doExchangeRequest(ctx, action, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
 }
 
 // doInfoRequest queries the public info endpoint.
@@ -223,8 +364,40 @@ func (c *Client) doInfoRequest(ctx context.Context, req InfoRequest, result inte
 	return fmt.Errorf("hyperliquid: info request failed")
 }
 
+// GetSubAccounts retrieves the list of subaccounts for a master user address.
+func (c *Client) GetSubAccounts(ctx context.Context, user string) ([]SubAccount, error) {
+	if !common.IsHexAddress(user) {
+		return nil, fmt.Errorf("hyperliquid: invalid user address %q", user)
+	}
+	var out []SubAccount
+	err := c.doInfoRequest(ctx, InfoRequest{Type: "subAccounts", User: common.HexToAddress(user).Hex()}, &out)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// GetVaultDetails retrieves vault details by address (optionally scoped by user).
+func (c *Client) GetVaultDetails(ctx context.Context, vaultAddress string, user string) (*VaultDetails, error) {
+	if !common.IsHexAddress(vaultAddress) {
+		return nil, fmt.Errorf("hyperliquid: invalid vault address %q", vaultAddress)
+	}
+	req := InfoRequest{Type: "vaultDetails", VaultAddress: common.HexToAddress(vaultAddress).Hex()}
+	if user != "" {
+		if !common.IsHexAddress(user) {
+			return nil, fmt.Errorf("hyperliquid: invalid user address %q", user)
+		}
+		req.User = common.HexToAddress(user).Hex()
+	}
+	var out VaultDetails
+	if err := c.doInfoRequest(ctx, req, &out); err != nil {
+		return nil, err
+	}
+	return &out, nil
+}
+
 // doExchangeRequest signs and submits an exchange action.
-func (c *Client) doExchangeRequest(ctx context.Context, action Action, result interface{}) error {
+func (c *Client) doExchangeRequest(ctx context.Context, action interface{}, result interface{}) error {
 	exchangeReq, err := c.signAction(action)
 	if err != nil {
 		return err
@@ -233,6 +406,7 @@ func (c *Client) doExchangeRequest(ctx context.Context, action Action, result in
 	if err != nil {
 		return fmt.Errorf("hyperliquid: encode exchange request: %w", err)
 	}
+	c.logf("hyperliquid: exchange request payload=%s", string(payload))
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.exchangeURL, bytes.NewReader(payload))
 	if err != nil {
 		return fmt.Errorf("hyperliquid: build exchange request: %w", err)
@@ -253,6 +427,7 @@ func (c *Client) doExchangeRequest(ctx context.Context, action Action, result in
 		return fmt.Errorf("hyperliquid: read exchange response: %w", readErr)
 	}
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= 300 {
+		c.logf("hyperliquid: exchange error status=%d body=%s", resp.StatusCode, string(body))
 		return fmt.Errorf("hyperliquid: exchange http status %d: %s", resp.StatusCode, string(body))
 	}
 	if result != nil {
@@ -264,13 +439,13 @@ func (c *Client) doExchangeRequest(ctx context.Context, action Action, result in
 }
 
 // signAction builds the EIP-712 payload and signs it.
-func (c *Client) signAction(action Action) (*ExchangeRequest, error) {
+func (c *Client) signAction(action interface{}) (*ExchangeRequest, error) {
 	now := c.clock
 	if now == nil {
 		now = time.Now
 	}
 	nonce := now().UnixMilli()
-	exchangeReq, err := signAction(action, c.signer, nonce, c.vault, !c.isTestnet)
+	exchangeReq, err := signAction(action, c.signer, nonce, c.mainAddress, c.vault, !c.isTestnet)
 	if err != nil {
 		return nil, err
 	}
