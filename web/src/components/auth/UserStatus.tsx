@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
-import { usePathname } from "next/navigation";
-import { useAuthDispatch, useAppSelector } from "@/store/redux/hooks";
+import {useMemo} from "react";
+import {usePathname} from "next/navigation";
+import {useAuthDispatch, useAppSelector} from "@/store/redux/hooks";
 import {AppButton} from "@/components/ui";
 
 export default function UserStatus() {
   const pathname = usePathname();
   const auth = useAuthDispatch();
-  const { user, status, error } = useAppSelector((state) => state.auth);
+  const {user, status, error} = useAppSelector((state) => state.auth);
 
   const loading = useMemo(() => status === "loading", [status]);
 
@@ -29,13 +29,11 @@ export default function UserStatus() {
   if (!user) {
     return (
       <div className="flex items-center gap-2">
-        <Link
-          href={loginUrl}
-          className="px-3 py-1 text-xs border rounded chip-btn"
-          style={{ borderColor: "var(--chip-border)", color: "inherit" }}
-        >
-          {loading ? "…" : "Log in"}
-        </Link>
+        <AppButton asChild variant="outline" size="sm">
+          <Link href={loginUrl}>
+            {loading ? "…" : "Log in"}
+          </Link>
+        </AppButton>
       </div>
     );
   }
