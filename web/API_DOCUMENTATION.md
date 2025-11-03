@@ -89,6 +89,7 @@ curl -X GET https://nof1.ai/api/crypto-prices
 
 **Endpoint:** `/api/nof1/account-totals`
 **Backend URL:** `https://nof1.ai/api/account-totals`
+**Local URL:** `http://localhost:3000/api/nof1/account-totals`
 **Method:** GET
 **Refresh Rate:** 10s (client polling)
 **Cache:** 10s browser and CDN
@@ -97,12 +98,18 @@ curl -X GET https://nof1.ai/api/crypto-prices
 ### Description
 Returns account value, equity, positions, and PnL data for all trading models. This is the primary data source for tracking portfolio performance and open positions.
 
+**Response Size:** Large dataset (~7MB) with 2,807+ data points across 7 trading models (gpt-5, grok-4, claude-sonnet-4-5, deepseek-chat-v3.1, gemini-2.5-pro, qwen3-max, buynhold_btc).
+
 ### cURL Command
 ```bash
+# Production API
 curl -X GET https://nof1.ai/api/account-totals
 
+# Local development
+curl -X GET http://localhost:3000/api/nof1/account-totals
+
 # With incremental updates (fetch only new data after a marker)
-curl -X GET "https://nof1.ai/api/account-totals?lastHourlyMarker=12345"
+curl -X GET "http://localhost:3000/api/nof1/account-totals?lastHourlyMarker=12345"
 ```
 
 ### Example Response (truncated for brevity)
@@ -111,13 +118,24 @@ curl -X GET "https://nof1.ai/api/account-totals?lastHourlyMarker=12345"
   "accountTotals": [
     {
       "id": "gpt-5_0",
+      "model_id": "gpt-5",
       "timestamp": 1760741958.847073,
-      "realized_pnl": -32.909602,
+      "realized_pnl": -32.90960200000001,
+      "total_unrealized_pnl": 337.88502,
+      "dollar_equity": 10304.975418,
+      "sharpe_ratio": 0.077,
+      "cum_pnl_pct": 3.05,
+      "since_inception_minute_marker": 59,
+      "since_inception_hourly_marker": 0,
       "positions": {
         "XRP": {
           "entry_oid": 204600432746,
+          "oid": 204600432746,
+          "tp_oid": -1,
+          "sl_oid": -1,
           "risk_usd": 600,
           "confidence": 0.64,
+          "index_col": null,
           "exit_plan": {
             "profit_target": 2.19783,
             "stop_loss": 2.41611,
@@ -126,18 +144,25 @@ curl -X GET "https://nof1.ai/api/account-totals?lastHourlyMarker=12345"
           "entry_time": 1760738675.497112,
           "symbol": "XRP",
           "entry_price": 2.339594,
+          "current_price": 2.31705,
           "margin": 1670.575901,
           "leverage": 12,
+          "slippage": 0,
           "quantity": -7716,
-          "current_price": 2.31705,
           "unrealized_pnl": 174.3401,
+          "closed_pnl": -8.12,
           "liquidation_price": 2.4717151438,
-          "commission": 16.243539
+          "commission": 16.243539000000002,
+          "wait_for_fill": false
         },
         "BTC": {
           "entry_oid": 204614807391,
+          "oid": 204614807391,
+          "tp_oid": 204614857389,
+          "sl_oid": 204614868067,
           "risk_usd": 300,
           "confidence": 0.62,
+          "index_col": null,
           "exit_plan": {
             "profit_target": 102321.7,
             "stop_loss": 109362.4,
@@ -146,13 +171,16 @@ curl -X GET "https://nof1.ai/api/account-totals?lastHourlyMarker=12345"
           "entry_time": 1760740073.642661,
           "symbol": "BTC",
           "entry_price": 107067.9,
+          "current_price": 106969.5,
           "margin": 935.231196,
           "leverage": 15,
+          "slippage": 0,
           "quantity": -0.13,
-          "current_price": 106969.5,
           "unrealized_pnl": 12.72892,
+          "closed_pnl": -6.26,
           "liquidation_price": 112754.6529610636,
-          "commission": 12.523466
+          "commission": 12.523466,
+          "wait_for_fill": false
         }
       }
     }
@@ -160,37 +188,88 @@ curl -X GET "https://nof1.ai/api/account-totals?lastHourlyMarker=12345"
 }
 ```
 
+**Note:** The actual response contains 2,807+ data points across 7 models. This example shows a single record with 2 positions for clarity.
+
 ### Response Schema
 - `accountTotals` (array): Array of account snapshots for each model
-  - `id` (string): Model identifier
-  - `model_id` (string): Alternative model identifier field
+  - `id` (string): Model identifier with suffix (e.g., "gpt-5_0")
+  - `model_id` (string): Model identifier without suffix (e.g., "gpt-5")
   - `timestamp` (number): Unix timestamp in seconds
-  - `equity` (number): Account equity value
-  - `dollar_equity` (number): Dollar-denominated equity
+  - `dollar_equity` (number): Dollar-denominated equity (primary equity field)
+  - `equity` (number): Alternative equity field
   - `account_value` (number): Total account value
   - `realized_pnl` (number): Realized profit/loss
-  - `unrealized_pnl` (number): Unrealized profit/loss
+  - `total_unrealized_pnl` (number): Total unrealized profit/loss across all positions
+  - `unrealized_pnl` (number): Alternative unrealized PnL field
+  - `sharpe_ratio` (number): Sharpe ratio performance metric
+  - `cum_pnl_pct` (number): Cumulative PnL percentage
   - `return_pct` (number): Return percentage
   - `since_inception_hourly_marker` (number): Hourly marker for incremental updates
+  - `since_inception_minute_marker` (number): Minute marker for incremental updates
   - `hourly_marker` (number): Alternative hourly marker field
   - `positions` (object): Map of symbol to position data
     - `entry_oid` (number): Entry order ID
+    - `oid` (number): Current order ID
+    - `tp_oid` (number): Take-profit order ID (-1 if not set)
+    - `sl_oid` (number): Stop-loss order ID (-1 if not set)
     - `risk_usd` (number): Risk amount in USD
     - `confidence` (number): Confidence score (0-1)
+    - `index_col` (null): Index column (typically null)
     - `exit_plan` (object): Exit strategy
       - `profit_target` (number): Target price for profit
       - `stop_loss` (number): Stop loss price
       - `invalidation_condition` (string): Condition to exit position
-    - `entry_time` (number): Entry timestamp
+    - `entry_time` (number): Entry timestamp in Unix seconds
     - `symbol` (string): Trading pair symbol
     - `entry_price` (number): Entry price
+    - `current_price` (number): Current market price
     - `margin` (number): Margin used
     - `leverage` (number): Leverage multiplier
     - `quantity` (number): Position size (negative = short, positive = long)
-    - `current_price` (number): Current market price
     - `unrealized_pnl` (number): Unrealized profit/loss
+    - `closed_pnl` (number): Closed profit/loss for this position
     - `liquidation_price` (number): Liquidation price
     - `commission` (number): Total commission paid
+    - `slippage` (number): Slippage amount
+    - `wait_for_fill` (boolean): Whether waiting for order fill
+
+### How This Data Powers the Chart
+
+The Account Totals API data is transformed into chart points through this flow:
+
+1. **API Response** → Multiple records per model over time
+   ```json
+   [
+     { "model_id": "gpt-5", "timestamp": 1760741958, "dollar_equity": 10304.98 },
+     { "model_id": "gpt-5", "timestamp": 1760742018, "dollar_equity": 10320.50 }
+   ]
+   ```
+
+2. **`useAccountValueSeries` Hook** → Groups by timestamp
+   ```javascript
+   [
+     { timestamp: 1760741958847, "gpt-5": 10304.98, "claude-sonnet-4-5": 9850.00 },
+     { timestamp: 1760742018847, "gpt-5": 10320.50, "claude-sonnet-4-5": 9875.25 }
+   ]
+   ```
+
+3. **`AccountValueChart` Component** → Converts to chart data
+   ```javascript
+   [
+     { timestamp: Date("2025-10-17T12:05:58.847Z"), "gpt-5": 10304.98 },
+     { timestamp: Date("2025-10-17T12:06:58.847Z"), "gpt-5": 10320.50 }
+   ]
+   ```
+
+4. **Recharts LineChart** → Renders each point at (time, value)
+   - X-axis: `timestamp` → "10-17 12:05"
+   - Y-axis: `dollar_equity` value → $10,304.98
+   - One line per model with logo at the latest point
+
+The chart uses:
+- **X-axis data:** `timestamp` field (converted to Date)
+- **Y-axis data:** `dollar_equity` / `equity` / `account_value` (in that priority order)
+- **Multiple series:** One line per unique `model_id`
 
 ---
 
@@ -684,5 +763,26 @@ curl -X GET https://nof1.ai/api/conversations
 
 ---
 
+## Update Log
+
+### 2025-11-03 (Latest)
+- Added local development URL for Account Totals API
+- Updated Account Totals response example with actual data from local server
+- Added complete response schema with all fields including:
+  - `sharpe_ratio`, `cum_pnl_pct`, `total_unrealized_pnl`
+  - `since_inception_minute_marker`, `since_inception_hourly_marker`
+  - Position fields: `tp_oid`, `sl_oid`, `oid`, `closed_pnl`, `wait_for_fill`, `slippage`, `index_col`
+- Added "How This Data Powers the Chart" section explaining the data flow from API to chart visualization
+- Documented actual response size (~7MB with 2,807+ data points across 7 models)
+
+### 2025-11-03 (Initial)
+- Initial documentation with all 8 API endpoints
+- cURL commands and example responses
+- Complete response schemas
+- Component-to-API mapping table
+
+---
+
 **Last Updated:** 2025-11-03
 **API Version:** v1
+**Documentation Status:** Verified against local development server
