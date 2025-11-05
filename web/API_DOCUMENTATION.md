@@ -9,14 +9,20 @@ This document contains all the API calls used in the Home page (`/src/app/page.t
 
 ## Table of Contents
 
+### API Endpoints
 1. [Crypto Prices API](#1-crypto-prices-api)
 2. [Account Totals API](#2-account-totals-api)
-3. [Positions API](#3-positions-api)
+3. ~~[Positions API](#3-positions-api)~~ - **DEPRECATED** (Use Account Totals API instead)
 4. [Trades API](#4-trades-api)
 5. [Since Inception Values API](#5-since-inception-values-api)
 6. [Leaderboard API](#6-leaderboard-api)
 7. [Analytics API](#7-analytics-api)
 8. [Conversations API](#8-conversations-api)
+
+### Page-Specific API Documentation
+- [Leaderboard Page](#leaderboard-page-leaderboard) - Complete API breakdown for model rankings page
+- [Model Detail Page](#model-detail-page-modelsid) - Complete API breakdown for individual model analysis page
+- [API Usage Summary](#api-usage-summary-by-page) - Cross-page API usage comparison table
 
 ---
 
@@ -278,16 +284,16 @@ The chart uses:
 
 ---
 
-## 3. Positions API
+<!-- ## 3. Positions API - DEPRECATED (Use Account Totals API instead)
 
 **Endpoint:** `/api/nof1/positions`
 **Backend URL:** `https://nof1.ai/api/positions`
 **Method:** GET
-**Status:** DEPRECATED
+**Status:** DEPRECATED - This API is no longer actively used
 **Cache:** 10s browser and CDN
 
 ### Description
-This API is deprecated. Use Account Totals API instead to get position data.
+This API is deprecated. Use Account Totals API instead to get position data. The `usePositions()` hook now internally calls `useAccountTotals()` and extracts position data from the `positions` field.
 
 ### cURL Command
 ```bash
@@ -302,6 +308,7 @@ curl -X GET "https://nof1.ai/api/positions?limit=1000"
   "serverTime": 1762179346274
 }
 ```
+-->
 
 ---
 
@@ -860,7 +867,7 @@ curl -X GET http://localhost:3000/api/nof1/conversations
 |-----|----------------|---------------|-----------|
 | Crypto Prices | 10s | 5s | 10s |
 | Account Totals | 10s | 10s | 10s |
-| Positions | N/A (deprecated) | 10s | 10s |
+| ~~Positions~~ | ~~N/A (deprecated)~~ | ~~10s~~ | ~~10s~~ |
 | Trades | 10s | 10s | 10s |
 | Since Inception | On mount only | 600s | 600s |
 | Leaderboard | N/A | 60s | 60s |
@@ -877,9 +884,152 @@ curl -X GET http://localhost:3000/api/nof1/conversations
 
 ---
 
+## Page-Specific API Documentation
+
+This section documents which API endpoints are used by each page in the application.
+
+---
+
+### Leaderboard Page (`/leaderboard`)
+
+**Page Component:** `/src/app/leaderboard/page.tsx`
+**URL:** `http://localhost:3000/leaderboard`
+
+#### API Endpoints Used
+
+| # | Endpoint | Refresh Rate | Hook | Purpose |
+|---|----------|--------------|------|---------|
+| 1 | `/api/nof1/leaderboard` | 60s | `useLeaderboard()` | Base model rankings with equity, return %, trade counts, win/loss dollars |
+| 2 | `/api/nof1/analytics` | 15s | `useAnalyticsMap()` | Advanced metrics: fees, win rate, confidence levels, extreme PnL values |
+| 3 | `/api/nof1/account-totals` | 10s | `useAccountTotals()` via `useLatestEquityMap()` | Latest equity snapshots for accurate current values |
+| 4 | `/api/nof1/trades` | 15s | `useTrades()` via `useTradesCountMap()` and `useSharpeMap()` | Trade counts and Sharpe ratio calculations |
+
+#### Components and Their API Usage
+
+```
+LeaderboardPage (page.tsx)
+└── LeaderboardOverview (wrapper component)
+    └── LeaderboardTable (main table)
+        ├── useLeaderboard() → /api/nof1/leaderboard
+        ├── useAnalyticsMap() → /api/nof1/analytics
+        ├── useLatestEquityMap() → /api/nof1/account-totals
+        ├── useTradesCountMap() → /api/nof1/trades
+        └── useSharpeMap() → /api/nof1/account-totals + /api/nof1/trades
+```
+
+#### Data Merging Strategy
+
+The leaderboard table merges data from 4 different APIs into a single comprehensive view:
+
+1. **Base data** from Leaderboard API (basic rankings)
+2. **Enhanced metrics** from Analytics API (fees, win rate, confidence)
+3. **Latest equity** from Account Totals API (most recent snapshot values)
+4. **Accurate trade counts** from Trades API (client-side aggregation)
+5. **Sharpe ratios** calculated from Trades + Account Totals APIs (daily excess returns vs. BTC benchmark, 10% winsorized)
+
+---
+
+### Model Detail Page (`/models/[id]`)
+
+**Page Component:** `/src/app/models/[id]/page.tsx`
+**URL:** `http://localhost:3000/models/{model_id}`
+**Example:** `http://localhost:3000/models/gpt-5`
+
+#### API Endpoints Used
+
+| # | Endpoint | Refresh Rate | Components Using | Purpose |
+|---|----------|--------------|-----------------|---------|
+| 1 | `/api/nof1/account-totals` | 10s | All components (5/5) | Latest equity, positions, margin, unrealized PnL, liquidation prices |
+| 2 | `/api/nof1/analytics` | 15s | ModelStatsSummary, ModelAnalyticsDetails | Comprehensive analytics, fees, win/loss stats, signals, leverage |
+| 3 | `/api/nof1/trades` | 15s | ModelStatsSummary, ModelRecentTradesTable | Realized PnL calculation, trade history, hold time breakdown |
+
+#### Components and Their API Usage
+
+```
+ModelDetailPage (page.tsx)
+├── ModelSelectorBar
+│   └── useLatestEquityMap() → /api/nof1/account-totals
+├── ModelStatsSummary
+│   ├── useAccountTotals() → /api/nof1/account-totals
+│   ├── useAnalyticsMap() → /api/nof1/analytics
+│   ├── usePositions() → /api/nof1/account-totals (via useAccountTotals)
+│   └── useTrades() → /api/nof1/trades
+├── ModelAnalyticsDetails (collapsible)
+│   └── useAnalyticsMap() → /api/nof1/analytics
+├── ModelOpenPositions
+│   ├── usePositions() → /api/nof1/account-totals (via useAccountTotals)
+│   └── useAccountTotals() → /api/nof1/account-totals
+└── ModelRecentTradesTable
+    └── useTrades() → /api/nof1/trades
+```
+
+#### Page Sections
+
+1. **Model Selector Bar**
+   - Navigation buttons for all models with latest equity values
+   - API: Account Totals
+
+2. **Summary Stats (Part 1)**
+   - Total equity, Total PnL, Realized PnL, Available cash, Total fees
+   - APIs: Account Totals, Analytics, Trades
+
+3. **Summary Stats (Part 2)**
+   - Average leverage, Average confidence, Max gain/loss, Hold time breakdown
+   - APIs: Analytics, Trades
+
+4. **Analytics Details (Collapsible)**
+   - 5 breakdown sections: Trade overview, Winners vs. losers, Signal stats, Invocation cadence, Long/short breakdown
+   - API: Analytics
+
+5. **Current Positions Table**
+   - Open positions with entry details, margin, unrealized PnL, exit plans
+   - API: Account Totals
+
+6. **Recent Trades Table (Latest 25)**
+   - Completed trades with entry/exit prices, hold time, fees, net PnL
+   - API: Trades
+
+---
+
+### API Usage Summary by Page
+
+| API Endpoint | Leaderboard Page | Model Detail Page | Total Pages |
+|-------------|------------------|-------------------|-------------|
+| `/api/nof1/leaderboard` | ✓ | — | 1 |
+| `/api/nof1/analytics` | ✓ | ✓ | 2 |
+| `/api/nof1/account-totals` | ✓ | ✓ | 2 |
+| `/api/nof1/trades` | ✓ | ✓ | 2 |
+
+**Note:** The Positions API (`/api/nof1/positions`) is deprecated. The `usePositions()` hook internally calls `useAccountTotals()` and extracts position data from the `positions` field in the response
+
+---
+
 ## Update Log
 
-### 2025-11-03 (Latest Update)
+### 2025-11-05 (Latest Update)
+- **Added Page-Specific API Documentation section** with complete endpoint mapping for Leaderboard and Model Detail pages
+  - **Source Code Analysis:** Traced all hooks and components to identify exact API endpoints used
+  - **Verified with cURL:** Tested all endpoints against running local server (http://localhost:3000)
+  - **Component Tree Diagrams:** Visual component hierarchy showing API usage patterns
+
+  **Leaderboard Page (`/leaderboard`):**
+  - Documents 4 unique API endpoints with refresh rates and hooks
+  - Data merging strategy: combines Leaderboard + Analytics + Account Totals + Trades APIs
+  - Component tree showing how `LeaderboardTable` aggregates data from 5 different hooks
+  - Sharpe ratio calculation methodology (daily excess returns vs. BTC benchmark, 10% winsorized)
+
+  **Model Detail Page (`/models/[id]`):**
+  - Documents 3 unique API endpoints used across 5 components
+  - Component tree showing API usage hierarchy for each page section
+  - Detailed breakdown of 6 page sections and their respective API dependencies
+  - Notes on deprecated Positions API and its replacement with Account Totals
+
+  **API Usage Summary Table:**
+  - Cross-page comparison showing which endpoints are shared vs. page-specific
+  - `/api/nof1/leaderboard` - Leaderboard page only
+  - `/api/nof1/analytics`, `/api/nof1/account-totals`, `/api/nof1/trades` - Both pages
+
+### 2025-11-03
 - **Added local development URLs** for all API endpoints
 - **Updated all example responses** with actual data from local development server (http://localhost:3000)
 - **Enhanced API descriptions** with more context about usage and purpose
@@ -908,6 +1058,6 @@ curl -X GET http://localhost:3000/api/nof1/conversations
 
 ---
 
-**Last Updated:** 2025-11-03
+**Last Updated:** 2025-11-05
 **API Version:** v1
 **Documentation Status:** Verified against local development server
